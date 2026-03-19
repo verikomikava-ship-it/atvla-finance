@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { AppState, Bill } from '../types';
+import React, { useState, useMemo } from 'react';
+import { AppState, Bill, UTILITY_TYPES } from '../types';
 import { getDaysUntilDue, getUrgencyColor } from '../utils/billWarnings';
-import { Plus, X, Check, Calendar, Repeat, Pencil } from 'lucide-react';
+import { Plus, X, Check, Calendar, Repeat, Pencil, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +90,46 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
     .reduce((sum, b) => sum + b.amount, 0);
   const billsTotal = monthlyBills.reduce((sum, b) => sum + b.amount, 0);
 
+  // კომუნალურის აგრეგაცია ყოველდღიური ხარჯებიდან ამ თვისთვის
+  const utilityPayments = useMemo(() => {
+    const payments: { type: string; icon: string; color: string; amount: number; date: string }[] = [];
+    Object.entries(state.db).forEach(([dateKey, dayData]) => {
+      const d = new Date(dateKey + 'T00:00:00');
+      if (d.getMonth() !== currentMonth) return;
+      (dayData.expenses || []).forEach((exp) => {
+        if (exp.subcategory === 'კომუნალური' && exp.amount > 0) {
+          const utilInfo = UTILITY_TYPES.find((u) => u.key === exp.utilityType);
+          payments.push({
+            type: exp.utilityType === 'სხვა' && exp.utilityCustomName
+              ? exp.utilityCustomName
+              : (utilInfo?.label || exp.utilityType || 'კომუნალური'),
+            icon: utilInfo?.icon || '🏠',
+            color: utilInfo?.color || '#64748b',
+            amount: exp.amount,
+            date: dateKey,
+          });
+        }
+      });
+    });
+    return payments;
+  }, [state.db, currentMonth]);
+
+  const utilityTotal = utilityPayments.reduce((sum, p) => sum + p.amount, 0);
+  // ჯგუფებად — ტიპის მიხედვით
+  const utilityByType = useMemo(() => {
+    const grouped: Record<string, { icon: string; color: string; total: number; payments: typeof utilityPayments }> = {};
+    utilityPayments.forEach((p) => {
+      if (!grouped[p.type]) {
+        grouped[p.type] = { icon: p.icon, color: p.color, total: 0, payments: [] };
+      }
+      grouped[p.type].total += p.amount;
+      grouped[p.type].payments.push(p);
+    });
+    return grouped;
+  }, [utilityPayments]);
+
+  const grandTotal = billsTotal + utilityTotal;
+
   return (
     <div className="space-y-2">
       <p className="font-semibold text-sm">თვიური ბილები</p>
@@ -123,19 +163,52 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
             <span className="text-blue-400">დარჩენილი:</span>
             <span className="font-bold text-blue-400">{billsRemaining}₾</span>
           </div>
+          {utilityTotal > 0 && (
+            <div className="flex justify-between text-xs">
+              <span className="flex items-center gap-1 text-teal-300"><Zap className="h-2.5 w-2.5" />კომუნალური:</span>
+              <span className="font-bold text-teal-300">{utilityTotal}₾</span>
+            </div>
+          )}
           <div className="flex justify-between text-xs text-blue-200 pt-1.5 border-t border-blue-700">
             <span>სულ:</span>
-            <span className="font-bold">{billsTotal}₾</span>
+            <span className="font-bold">{grandTotal}₾</span>
           </div>
-          {billsTotal > 0 && <Progress value={(billsPaid / billsTotal) * 100} indicatorClassName="bg-blue-400" className="h-1 bg-blue-900/50" />}
+          {grandTotal > 0 && <Progress value={(billsPaid / grandTotal) * 100} indicatorClassName="bg-blue-400" className="h-1 bg-blue-900/50" />}
         </CardContent>
       </Card>
 
+      {/* კომუნალური — ავტომატური აგრეგაცია */}
+      {utilityPayments.length > 0 && (
+        <Card className="bg-teal-500/10 border-teal-700/50 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-teal-900/30 border-b border-teal-700/30">
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-teal-400" />
+              <span className="text-xs font-bold text-teal-300">კომუნალური</span>
+            </div>
+            <span className="text-sm font-black text-teal-300">{utilityTotal}₾</span>
+          </div>
+          <CardContent className="p-2 space-y-1">
+            {Object.entries(utilityByType).map(([type, data]) => (
+              <div key={type} className="flex items-center justify-between px-2 py-1 rounded-md" style={{ backgroundColor: `${data.color}10` }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">{data.icon}</span>
+                  <span className="text-xs font-bold" style={{ color: data.color }}>{type}</span>
+                  {data.payments.length > 1 && (
+                    <span className="text-[9px] text-slate-500">({data.payments.length}x)</span>
+                  )}
+                </div>
+                <span className="text-xs font-black" style={{ color: data.color }}>{data.total}₾</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* ბილების სია */}
       <div className="space-y-2">
-        {monthlyBills.length === 0 ? (
+        {monthlyBills.length === 0 && utilityPayments.length === 0 ? (
           <p className="text-center text-slate-500 py-4">ამ თვეში ბილი არ დამატებულა</p>
-        ) : (
+        ) : monthlyBills.length === 0 ? null : (
           monthlyBills.map((bill) => {
             const daysUntilDue = bill.dueDate ? getDaysUntilDue(bill.dueDate) : null;
             const bgColor = bill.dueDate ? getUrgencyColor(daysUntilDue ?? 999, bill.paid) : '#475569';

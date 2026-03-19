@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, DayData, Expense, ExpenseCategory, ExpenseSubcategory, SUBCATEGORIES, SUBCATEGORY_LIST } from '../types';
+import { AppState, DayData, Expense, ExpenseCategory, ExpenseSubcategory, SUBCATEGORIES, SUBCATEGORY_LIST, UtilityType, UTILITY_TYPES } from '../types';
 import { calculateBalance, getExpensesTotal, getDailyTargetForDate, getAverageDailyExpenses, calculateDebtRepaymentPlan } from '../utils/calculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -133,6 +133,25 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
               category: info.defaultCategory,
               debtId: subcategory === 'ვალის გადახდა' ? e.debtId : undefined,
               billId: subcategory === 'ყოველთვიური გადასახადი' ? e.billId : undefined,
+              utilityType: subcategory === 'კომუნალური' ? e.utilityType : undefined,
+              utilityCustomName: subcategory === 'კომუნალური' ? e.utilityCustomName : undefined,
+            }
+          : e
+      ),
+    }));
+  };
+
+  const updateExpenseUtility = (expenseId: number, utilityType: UtilityType) => {
+    const utilInfo = UTILITY_TYPES.find((u) => u.key === utilityType);
+    setFormData((prev) => ({
+      ...prev,
+      expenses: prev.expenses.map((e) =>
+        e.id === expenseId
+          ? {
+              ...e,
+              utilityType,
+              name: `კომუნალური: ${utilInfo?.label || utilityType}`,
+              utilityCustomName: utilityType === 'სხვა' ? e.utilityCustomName : undefined,
             }
           : e
       ),
@@ -654,6 +673,52 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                   )}
                   {expense.subcategory === 'ყოველთვიური გადასახადი' && unpaidBills.length === 0 && (
                     <p className="ml-6 text-[9px] text-muted-foreground">ამ თვეში გადაუხდელი ბილები არ არის</p>
+                  )}
+                  {expense.subcategory === 'კომუნალური' && (
+                    <div className="ml-6 space-y-1">
+                      <div className="flex flex-wrap gap-1">
+                        {UTILITY_TYPES.map((util) => (
+                          <button
+                            key={util.key}
+                            type="button"
+                            onClick={() => updateExpenseUtility(expense.id, util.key)}
+                            className={cn(
+                              'px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all',
+                              expense.utilityType === util.key
+                                ? 'ring-1 ring-offset-1 ring-offset-slate-900'
+                                : 'opacity-60 hover:opacity-100'
+                            )}
+                            style={{
+                              borderColor: util.color,
+                              color: util.color,
+                              backgroundColor: expense.utilityType === util.key ? `${util.color}20` : 'transparent',
+                              boxShadow: expense.utilityType === util.key ? `0 0 8px ${util.color}30` : 'none',
+                            }}
+                          >
+                            {util.icon} {util.label}
+                          </button>
+                        ))}
+                      </div>
+                      {expense.utilityType === 'სხვა' && (
+                        <Input
+                          type="text"
+                          placeholder="მიუთითე რა კომუნალურია..."
+                          value={expense.utilityCustomName || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData((prev) => ({
+                              ...prev,
+                              expenses: prev.expenses.map((ex) =>
+                                ex.id === expense.id
+                                  ? { ...ex, utilityCustomName: val, name: `კომუნალური: ${val || 'სხვა'}` }
+                                  : ex
+                              ),
+                            }));
+                          }}
+                          className="h-6 text-[10px]"
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
               ))}

@@ -57,6 +57,18 @@ export const SUBCATEGORIES: Record<ExpenseSubcategory, SubcategoryInfo> = {
 
 export const SUBCATEGORY_LIST: ExpenseSubcategory[] = Object.keys(SUBCATEGORIES) as ExpenseSubcategory[];
 
+// კომუნალურის საბ-ტიპები
+export type UtilityType = 'დენი' | 'გაზი' | 'წყალი' | 'დასუფთავება' | 'ინტერნეტი' | 'სხვა';
+
+export const UTILITY_TYPES: { key: UtilityType; label: string; icon: string; color: string }[] = [
+  { key: 'დენი', label: 'დენი', icon: '⚡', color: '#fbbf24' },
+  { key: 'გაზი', label: 'გაზი', icon: '🔥', color: '#f97316' },
+  { key: 'წყალი', label: 'წყალი', icon: '💧', color: '#3b82f6' },
+  { key: 'დასუფთავება', label: 'დასუფთავება', icon: '🧹', color: '#10b981' },
+  { key: 'ინტერნეტი', label: 'ინტერნეტი', icon: '🌐', color: '#8b5cf6' },
+  { key: 'სხვა', label: 'სხვა', icon: '📋', color: '#64748b' },
+];
+
 export type Expense = {
   id: number;
   name: string;
@@ -65,6 +77,8 @@ export type Expense = {
   subcategory?: ExpenseSubcategory;
   debtId?: number; // ვალის გადახდისთვის - რომელ ვალს ეხება
   billId?: number; // ყოველთვიური გადასახადისთვის - რომელ ბილს ეხება
+  utilityType?: UtilityType; // კომუნალურის ტიპი
+  utilityCustomName?: string; // თუ 'სხვა' აირჩია
 };
 
 export type DayData = {
