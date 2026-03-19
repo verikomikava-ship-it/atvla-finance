@@ -15,6 +15,7 @@ import { ToolsMenu } from '@/components/ToolsMenu';
 import { DiaryView } from '@/components/DiaryView';
 import { SetupWizard } from '@/components/SetupWizard';
 import { cn } from '@/lib/utils';
+import { Menu, X } from 'lucide-react';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth().toString());
   const [activeTab, setActiveTab] = useState<'debts' | 'bills' | 'subscriptions' | 'loans' | 'stats'>('debts');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const stats = useMemo(() => calculateStats(state), [state]);
 
@@ -419,7 +421,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200">
+    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200">
       {/* Main scrollable area (header + calendar) */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         <Header
@@ -436,15 +438,13 @@ export const App: React.FC = () => {
           <DiaryView state={state} selectedMonth={selectedMonth} />
           <Calendar state={state} selectedMonth={selectedMonth} onDaySelect={setSelectedDay} />
         </main>
-      </div>
 
-      {/* Sidebar */}
-      <aside className="w-96 bg-slate-900/80 border-l border-slate-700/50 flex flex-col h-screen">
-        <div className="p-3 border-b border-slate-700/50">
+        {/* Mobile: month selector + sidebar toggle */}
+        <div className="md:hidden flex items-center gap-2 px-3 py-2 sticky bottom-0 bg-slate-900/95 backdrop-blur border-t border-slate-700/50">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="w-full bg-slate-800/80 text-slate-200 px-3 py-2 rounded-md border border-slate-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/30 outline-none transition-colors text-sm"
+            className="flex-1 bg-slate-800/80 text-slate-200 px-3 py-2 rounded-md border border-slate-600 text-sm"
           >
             {MONTH_NAMES.map((month, index) => (
               <option key={index} value={index.toString()}>
@@ -453,6 +453,46 @@ export const App: React.FC = () => {
             ))}
             <option value="">ყველა თვე</option>
           </select>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="bg-yellow-500 text-slate-900 px-3 py-2 rounded-md font-bold text-sm flex items-center gap-1"
+          >
+            <Menu className="w-4 h-4" />
+            მენიუ
+          </button>
+        </div>
+      </div>
+
+      {/* Sidebar: overlay on mobile, fixed on desktop */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={cn(
+        'bg-slate-900/95 backdrop-blur border-l border-slate-700/50 flex flex-col',
+        // Desktop
+        'hidden md:flex md:w-96 md:h-screen md:relative',
+        // Mobile overlay
+        sidebarOpen && '!flex fixed inset-y-0 right-0 w-[85vw] max-w-96 z-50 h-screen'
+      )}>
+        <div className="p-3 border-b border-slate-700/50 flex items-center gap-2">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="flex-1 bg-slate-800/80 text-slate-200 px-3 py-2 rounded-md border border-slate-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/30 outline-none transition-colors text-sm"
+          >
+            {MONTH_NAMES.map((month, index) => (
+              <option key={index} value={index.toString()}>
+                {month}
+              </option>
+            ))}
+            <option value="">ყველა თვე</option>
+          </select>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1.5 rounded-md hover:bg-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="flex text-xs font-bold border-b border-slate-700/50">

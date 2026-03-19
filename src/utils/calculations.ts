@@ -1,4 +1,4 @@
-import { DayData, AppState, MonthlyStats, UserProfile, Debt } from '../types';
+import { DayData, AppState, MonthlyStats, UserProfile, Debt, IncomeType } from '../types';
 
 // რამდენი სამუშაო დღეა მოცემულ თვეში
 export const getWorkDaysInMonth = (year: number, month: number, workDays: number[]): number => {
@@ -51,6 +51,55 @@ export const getDayStatus = (total: number, dailyBudget: number = 150): string =
   if (total >= half && total < dailyBudget) return 'status-yellow';
   if (total >= dailyBudget) return 'status-perfect';
   return 'bg-slate-800';
+};
+
+// ხარჯების სტატუსი: ბიუჯეტში ჯდება?
+const getExpenseStatus = (expenses: number, budget: number): 'green' | 'yellow' | 'red' => {
+  if (expenses <= budget) return 'green';
+  if (expenses <= budget * 1.5) return 'yellow';
+  return 'red';
+};
+
+// შემოსავლის სტატუსი: რამდენად შეასრულა გეგმა?
+const getIncomeStatus = (income: number, target: number): 'green' | 'yellow' | 'red' => {
+  if (target <= 0) return 'green';
+  if (income >= target) return 'green';
+  if (income >= target / 2) return 'yellow';
+  return 'red';
+};
+
+// გაუმჯობესებული სტატუსი incomeType-ის მიხედვით
+export const getDayStatusAdvanced = (
+  incomeType: IncomeType,
+  hasData: boolean,
+  expenses: number,
+  income: number,
+  dailyBudget: number,
+  dailyTarget: number,
+): string => {
+  if (!hasData) return 'bg-slate-800';
+
+  if (incomeType === 'salary') {
+    // ხელფასი: მწვანე = ხარჯი არ გადააჭარბა დღიურ ლიმიტს
+    const status = getExpenseStatus(expenses, dailyBudget);
+    if (status === 'green') return 'status-perfect';
+    if (status === 'yellow') return 'status-yellow';
+    return 'status-critical';
+  }
+
+  if (incomeType === 'freelance') {
+    // ფრილანსი: შემოსავლის გეგმა
+    const half = dailyTarget / 2;
+    if (income > 0 && income < half) return 'status-critical';
+    if (income >= half && income < dailyTarget) return 'status-yellow';
+    if (income >= dailyTarget) return 'status-perfect';
+    return 'bg-slate-800';
+  }
+
+  // ორივე: ნახევარი ხარჯი, ნახევარი შემოსავალი
+  const expStatus = getExpenseStatus(expenses, dailyBudget);
+  const incStatus = getIncomeStatus(income, dailyTarget);
+  return `status-${expStatus}-${incStatus}`;
 };
 
 export const calculateDayTotal = (data: DayData | undefined): number => {

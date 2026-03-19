@@ -70,24 +70,50 @@
   border-color: hsl(38 92% 50%);
 }
 
-.status-green-red {
-  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(0 84% 60%) 50%);
+/* Split statuses: ხარჯი (მარცხნივ) | შემოსავალი (მარჯვნივ) */
+.status-green-green {
+  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(142 71% 45%) 50%);
+  border-color: hsl(160 84% 39%);
 }
 
-.status-yellow-red {
-  background: linear-gradient(to right, hsl(38 92% 50%) 50%, hsl(0 84% 60%) 50%);
+.status-green-yellow {
+  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(38 92% 50%) 50%);
+  border-color: hsl(160 84% 39%);
+}
+
+.status-green-red {
+  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(0 84% 60%) 50%);
+  border-color: hsl(160 84% 39%);
 }
 
 .status-yellow-green {
   background: linear-gradient(to right, hsl(38 92% 50%) 50%, hsl(160 84% 39%) 50%);
+  border-color: hsl(38 92% 50%);
 }
 
-.status-green-green {
-  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(142 71% 45%) 50%);
+.status-yellow-yellow {
+  background: linear-gradient(to right, hsl(38 92% 45%) 50%, hsl(38 92% 55%) 50%);
+  border-color: hsl(38 92% 50%);
+}
+
+.status-yellow-red {
+  background: linear-gradient(to right, hsl(38 92% 50%) 50%, hsl(0 84% 60%) 50%);
+  border-color: hsl(38 92% 50%);
 }
 
 .status-red-green {
-  background: linear-gradient(135deg, hsl(0 84% 60%) 50%, hsl(160 84% 39%) 50%);
+  background: linear-gradient(to right, hsl(0 84% 60%) 50%, hsl(160 84% 39%) 50%);
+  border-color: hsl(0 84% 60%);
+}
+
+.status-red-yellow {
+  background: linear-gradient(to right, hsl(0 84% 60%) 50%, hsl(38 92% 50%) 50%);
+  border-color: hsl(0 84% 60%);
+}
+
+.status-red-red {
+  background: linear-gradient(to right, hsl(0 84% 55%) 50%, hsl(0 84% 65%) 50%);
+  border-color: hsl(0 84% 60%);
 }
 
 /* Scrollbar */

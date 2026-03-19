@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import { MapPin, MessageSquare, Briefcase, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AppState } from '../types';
-import { getDayStatus, calculateDayTotal, getDailyTargetForDate, isWorkDay } from '../utils/calculations';
+import { getDayStatusAdvanced, calculateDayTotal, getExpensesTotal, getDailyTargetForDate, isWorkDay } from '../utils/calculations';
 
 interface CalendarProps {
   state: AppState;
@@ -44,8 +44,11 @@ export const Calendar: React.FC<CalendarProps> = ({ state, selectedMonth, onDayS
       const key = d.toISOString().split('T')[0];
       const data = state.db[key];
       const total = calculateDayTotal(data);
+      const expenses = getExpensesTotal(data);
       const dayTarget = profile ? getDailyTargetForDate(key, profile) : 150;
-      const statusClass = getDayStatus(total, dayTarget);
+      const dailyBudget = profile?.dailyBudget || 150;
+      const incomeType = profile?.incomeType || 'freelance';
+      const statusClass = getDayStatusAdvanced(incomeType, !!data, expenses, total, dailyBudget, dayTarget);
       const isToday = key === todayKey;
       const isFuture = d > today;
       const dayNum = d.getDate();
@@ -60,7 +63,7 @@ export const Calendar: React.FC<CalendarProps> = ({ state, selectedMonth, onDayS
             'day-card p-2 rounded cursor-pointer transition-all transform hover:scale-108 hover:shadow-lg',
             statusClass,
             isFuture && 'opacity-40',
-            !workDay && profile?.incomeType !== 'freelance' && 'opacity-60'
+            !workDay && profile?.incomeType === 'both' && 'opacity-60'
           )}
           style={isToday ? {
             boxShadow: '0 0 0 3px #fbbf24, 0 0 20px rgba(251,191,36,0.4)',
