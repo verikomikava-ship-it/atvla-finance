@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserProfile, PayFrequency, Bill } from '../types';
+import { UserProfile, PayFrequency, Bill, UTILITY_TYPES } from '../types';
 import { getWorkDaysInMonth } from '../utils/calculations';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Briefcase, Rocket, Layers, ArrowLeft, ArrowRight, Plus, X, Check, Calendar } from 'lucide-react';
+
+// ყოველთვიური გადასახადის კატეგორიები
+const BILL_CATEGORIES = [
+  { key: 'კომუნალური', label: 'კომუნალური', icon: '🏠', color: '#14b8a6', hasSubTypes: true },
+  { key: 'ქირა', label: 'ქირა', icon: '🏢', color: '#8b5cf6' },
+  { key: 'სესხი', label: 'სესხი / განვადება', icon: '🏦', color: '#ef4444' },
+  { key: 'ინტერნეტი', label: 'ინტერნეტი', icon: '🌐', color: '#3b82f6' },
+  { key: 'დაზღვევა', label: 'დაზღვევა', icon: '🛡️', color: '#f59e0b' },
+  { key: 'ტელეფონი', label: 'ტელეფონი', icon: '📱', color: '#06b6d4' },
+  { key: 'გამოწერები', label: 'გამოწერები', icon: '🔄', color: '#a855f7' },
+  { key: 'სხვა', label: 'სხვა', icon: '📝', color: '#64748b' },
+] as const;
 
 interface SetupWizardProps {
   onComplete: (profile: UserProfile, bills: Bill[]) => void;
@@ -46,6 +58,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
   const [newBillName, setNewBillName] = useState('');
   const [newBillAmount, setNewBillAmount] = useState('');
   const [newBillDueDay, setNewBillDueDay] = useState('');
+  const [selectedBillCategory, setSelectedBillCategory] = useState<string | null>(null);
+  const [selectedUtilityType, setSelectedUtilityType] = useState<string | null>(null);
+  const [customBillName, setCustomBillName] = useState('');
   const [newAiName, setNewAiName] = useState('');
   const [newAiAmount, setNewAiAmount] = useState('');
   const [newAiFrequency, setNewAiFrequency] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
@@ -182,6 +197,26 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     setNewBillName('');
     setNewBillAmount('');
     setNewBillDueDay('');
+    setSelectedBillCategory(null);
+    setSelectedUtilityType(null);
+    setCustomBillName('');
+  };
+
+  const selectBillCategory = (key: string) => {
+    setSelectedBillCategory(key);
+    setSelectedUtilityType(null);
+    const cat = BILL_CATEGORIES.find((c) => c.key === key);
+    if (cat && key !== 'კომუნალური' && key !== 'სხვა') {
+      setNewBillName(cat.label);
+    } else if (key === 'სხვა') {
+      setNewBillName('');
+    }
+  };
+
+  const selectUtilitySubType = (utilKey: string) => {
+    setSelectedUtilityType(utilKey);
+    const util = UTILITY_TYPES.find((u) => u.key === utilKey);
+    setNewBillName(`კომუნალური: ${util?.label || utilKey}`);
   };
 
   const removeBillGroup = (name: string) => {
@@ -484,60 +519,160 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
           </Card>
         )}
 
-        {/* Step 3: ბილები */}
+        {/* Step 3: ყოველთვიური გადასახადი */}
         {step === 3 && (
           <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
             <CardHeader className="text-center">
               <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 3/4</Badge>
-              <CardTitle className="text-2xl font-black">ყოველთვიური ბილები</CardTitle>
-              <CardDescription>კომუნალური, ინტერნეტი, იჯარა, გამოწერები...</CardDescription>
+              <CardTitle className="text-2xl font-black">ყოველთვიური გადასახადი</CardTitle>
+              <CardDescription>აირჩიე კატეგორია და დაამატე შენი ხარჯები</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5">
+              {/* დამატებული ბილების სია */}
               {Object.keys(uniqueBills).length > 0 && (
-                <div className="space-y-2">
-                  {Object.entries(uniqueBills).map(([name, amount]) => (
-                    <div key={name} className="flex justify-between items-center p-3 rounded-lg border border-border bg-card">
-                      <div>
-                        <span className="font-bold">{name}</span>
-                        <Badge variant="warning" className="ml-2">{amount}{'\u20BE'}/თვე</Badge>
+                <div className="space-y-1.5">
+                  {Object.entries(uniqueBills).map(([name, amount]) => {
+                    const cat = BILL_CATEGORIES.find((c) => name.startsWith(c.label) || name.startsWith('კომუნალური'));
+                    const color = cat?.color || '#64748b';
+                    return (
+                      <div key={name} className="flex justify-between items-center p-2.5 rounded-lg border" style={{ borderColor: `${color}40`, backgroundColor: `${color}08` }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{cat?.icon || '📝'}</span>
+                          <div>
+                            <span className="font-bold text-sm" style={{ color }}>{name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">{amount}{'\u20BE'}/თვე</span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => removeBillGroup(name)}>
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeBillGroup(name)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <div className="text-right text-sm">
+                    );
+                  })}
+                  <div className="text-right text-sm pt-1">
                     <span className="text-muted-foreground">სულ: </span>
                     <span className="text-primary font-bold">{monthlyBillsTotal}{'\u20BE'}/თვე</span>
                   </div>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Input type="text" placeholder="ბილის სახელი (მაგ: ინტერნეტი)" value={newBillName} onChange={(e) => setNewBillName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addBill(); }} />
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={`თანხა \u20BE`}
-                    value={newBillAmount}
-                    onChange={(e) => setNewBillAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                    onKeyDown={(e) => { if (e.key === 'Enter') addBill(); }}
-                    className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                  />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="გადახდის დღე"
-                    value={newBillDueDay}
-                    onChange={(e) => setNewBillDueDay(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-36 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                  />
-                  <Button variant="outline" size="icon" onClick={addBill} className="border-primary/50 text-primary hover:bg-primary/10">
-                    <Plus className="w-4 h-4" />
-                  </Button>
+              {/* კატეგორიის არჩევა */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">აირჩიე კატეგორია:</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {BILL_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => selectBillCategory(cat.key)}
+                      className={cn(
+                        'flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-center',
+                        selectedBillCategory === cat.key
+                          ? 'scale-105'
+                          : 'border-border/50 hover:border-border opacity-70 hover:opacity-100'
+                      )}
+                      style={{
+                        borderColor: selectedBillCategory === cat.key ? cat.color : undefined,
+                        backgroundColor: selectedBillCategory === cat.key ? `${cat.color}15` : undefined,
+                      }}
+                    >
+                      <span className="text-lg">{cat.icon}</span>
+                      <span className="text-[10px] font-bold leading-tight" style={{ color: selectedBillCategory === cat.key ? cat.color : undefined }}>
+                        {cat.label}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {/* კომუნალურის საბ-ტიპები */}
+              {selectedBillCategory === 'კომუნალური' && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">რა კომუნალური?</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {UTILITY_TYPES.map((util) => (
+                      <button
+                        key={util.key}
+                        type="button"
+                        onClick={() => selectUtilitySubType(util.key)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all',
+                          selectedUtilityType === util.key
+                            ? 'scale-105'
+                            : 'opacity-60 hover:opacity-100'
+                        )}
+                        style={{
+                          borderColor: util.color,
+                          color: util.color,
+                          backgroundColor: selectedUtilityType === util.key ? `${util.color}20` : 'transparent',
+                          boxShadow: selectedUtilityType === util.key ? `0 0 10px ${util.color}25` : 'none',
+                        }}
+                      >
+                        {util.icon} {util.label}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedUtilityType === 'სხვა' && (
+                    <Input
+                      type="text"
+                      placeholder="რა კომუნალურია?"
+                      value={customBillName}
+                      onChange={(e) => {
+                        setCustomBillName(e.target.value);
+                        setNewBillName(`კომუნალური: ${e.target.value || 'სხვა'}`);
+                      }}
+                      className="h-9 text-sm"
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* სხვა — ხელით სახელი */}
+              {selectedBillCategory === 'სხვა' && (
+                <Input
+                  type="text"
+                  placeholder="სახელი (მაგ: პარკინგი, ბაღი...)"
+                  value={newBillName}
+                  onChange={(e) => setNewBillName(e.target.value)}
+                  className="h-9 text-sm"
+                  autoFocus
+                />
+              )}
+
+              {/* თანხა და გადახდის დღე */}
+              {selectedBillCategory && (selectedBillCategory !== 'კომუნალური' || selectedUtilityType) && (
+                <div className="space-y-2 animate-fadeIn">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="თანხა ₾"
+                      value={newBillAmount}
+                      onChange={(e) => setNewBillAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') addBill(); }}
+                      autoFocus
+                      className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="გადახდის დღე"
+                      value={newBillDueDay}
+                      onChange={(e) => setNewBillDueDay(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="w-36 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    />
+                  </div>
+                  <Button
+                    onClick={addBill}
+                    disabled={!newBillName.trim() || !newBillAmount}
+                    className="w-full h-9"
+                    variant="default"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    დამატება
+                  </Button>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">
@@ -622,7 +757,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
 
                   {Object.keys(uniqueBills).length > 0 && (
                     <div className="border-t border-border pt-2">
-                      <span className="text-muted-foreground text-sm">ბილები:</span>
+                      <span className="text-muted-foreground text-sm">ყოველთვიური გადასახადი:</span>
                       {Object.entries(uniqueBills).map(([name, amount]) => (
                         <div key={name} className="flex justify-between text-sm mt-1">
                           <span>{name}</span>
@@ -630,7 +765,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
                         </div>
                       ))}
                       <div className="flex justify-between text-sm mt-1 pt-1 border-t border-border/50">
-                        <span className="text-muted-foreground">სულ ბილები:</span>
+                        <span className="text-muted-foreground">სულ:</span>
                         <Badge variant="danger">-{monthlyBillsTotal}{'\u20BE'}/თვე</Badge>
                       </div>
                     </div>
