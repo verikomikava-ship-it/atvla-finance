@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { AppState, ExpenseCategory } from '../types';
-import { calculateMonthlyStats } from '../utils/calculations';
+import { AppState, ExpenseCategory, SUBCATEGORIES, UTILITY_TYPES, EXTRA_INCOME_SOURCES } from '../types';
+import { calculateMonthlyStats, getExpensesTotal } from '../utils/calculations';
 import { MONTH_NAMES } from '../utils/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Target, Flame, Calendar, BarChart3, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Flame, Calendar, BarChart3, PieChart, Zap, CreditCard, Receipt, Wallet } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   'საჭირო': '#10b981',
@@ -78,6 +78,25 @@ const DonutChart: React.FC<{ data: CategoryTotals; size?: number }> = ({ data, s
   );
 };
 
+// ჰორიზონტალური ბარი
+const HBar: React.FC<{ label: string; value: number; max: number; color: string; icon?: string }> = ({ label, value, max, color, icon }) => {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between items-center text-[11px]">
+        <span className="text-slate-300 flex items-center gap-1">
+          {icon && <span className="text-xs">{icon}</span>}
+          {label}
+        </span>
+        <span className="font-bold" style={{ color }}>{value}₾</span>
+      </div>
+      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  );
+};
+
 interface StatsViewProps {
   state: AppState;
   totalInc: number;
@@ -101,8 +120,23 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
   }, [state.bills]);
 
   const netBalance = totalInc - totalExp;
-
   const dailyBudget = state.profile?.dailyBudget || 150;
+
+  // საშუალო დღიური ხარჯი
+  const avgDailyExpense = useMemo(() => {
+    const days = Object.values(state.db);
+    if (days.length === 0) return 0;
+    const total = days.reduce((sum, d) => sum + getExpensesTotal(d), 0);
+    return Math.round(total / days.length);
+  }, [state.db]);
+
+  // საშუალო დღიური შემოსავალი
+  const avgDailyIncome = useMemo(() => {
+    const days = Object.values(state.db);
+    if (days.length === 0) return 0;
+    const total = days.reduce((sum, d) => sum + (d.incMain || 0) + (d.incExtra || 0), 0);
+    return Math.round(total / days.length);
+  }, [state.db]);
 
   const streaks = useMemo(() => {
     const start = new Date(2026, 0, 1);
@@ -130,13 +164,80 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
     return { current: streak, best };
   }, [state.db, dailyBudget]);
 
-  // თვიური ხარჯების კატეგორიების გამოთვლა
+  // ტოპ ქვე-კატეგორიები (ხარჯების)
+  const topSubcategories = useMemo(() => {
+    const totals: Record<string, { amount: number; icon: string; color: string }> = {};
+    Object.values(state.db).forEach((d) => {
+      (d.expenses || []).forEach((e) => {
+        if (e.amount > 0 && e.subcategory) {
+          const info = SUBCATEGORIES[e.subcategory];
+          const key = e.subcategory === 'კომუნალური' && e.utilityType
+            ? `კომუნალური: ${e.utilityType}`
+            : e.subcategory;
+          if (!totals[key]) {
+            const utilInfo = e.utilityType ? UTILITY_TYPES.find((u) => u.key === e.utilityType) : null;
+            totals[key] = {
+              amount: 0,
+              icon: utilInfo?.icon || info?.icon || '📝',
+              color: utilInfo?.color || CATEGORY_COLORS[e.category] || '#64748b',
+            };
+          }
+          totals[key].amount += e.amount;
+        }
+      });
+    });
+    return Object.entries(totals)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [state.db]);
+
+  const maxSubcategoryAmount = topSubcategories.length > 0 ? topSubcategories[0].amount : 0;
+
+  // კომუნალურის აგრეგაცია
+  const utilityTotals = useMemo(() => {
+    const totals: Record<string, { amount: number; icon: string; color: string }> = {};
+    Object.values(state.db).forEach((d) => {
+      (d.expenses || []).forEach((e) => {
+        if (e.subcategory === 'კომუნალური' && e.amount > 0 && e.utilityType) {
+          const util = UTILITY_TYPES.find((u) => u.key === e.utilityType);
+          const key = e.utilityType === 'სხვა' && e.utilityCustomName ? e.utilityCustomName : (util?.label || e.utilityType);
+          if (!totals[key]) {
+            totals[key] = { amount: 0, icon: util?.icon || '🏠', color: util?.color || '#64748b' };
+          }
+          totals[key].amount += e.amount;
+        }
+      });
+    });
+    return Object.entries(totals).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.amount - a.amount);
+  }, [state.db]);
+
+  const utilityTotal = utilityTotals.reduce((s, u) => s + u.amount, 0);
+
+  // დამატებითი შემოსავლის წყაროები
+  const extraIncomeSources = useMemo(() => {
+    const totals: Record<string, { amount: number; count: number; icon: string; color: string }> = {};
+    Object.values(state.db).forEach((d) => {
+      if ((d.incExtra || 0) > 0 && d.incExtraSource) {
+        const src = EXTRA_INCOME_SOURCES.find((s) => s.key === d.incExtraSource);
+        const key = d.incExtraSource === 'სხვა' && d.incExtraNote ? d.incExtraNote : (src?.label || d.incExtraSource);
+        if (!totals[key]) {
+          totals[key] = { amount: 0, count: 0, icon: src?.icon || '📝', color: src?.color || '#64748b' };
+        }
+        totals[key].amount += d.incExtra || 0;
+        totals[key].count++;
+      }
+    });
+    return Object.entries(totals).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.amount - a.amount);
+  }, [state.db]);
+
+  const totalExtraIncome = extraIncomeSources.reduce((s, e) => s + e.amount, 0);
+
+  // თვიური ხარჯების კატეგორიები
   const monthlyCategoryTotals = useMemo(() => {
     const result: Record<number, CategoryTotals> = {};
     for (let m = 0; m < 12; m++) {
       result[m] = { 'საჭირო': 0, 'აუცილებელი': 0, 'სურვილი': 0, 'გაუთვალისწინებელი': 0 };
     }
-
     Object.entries(state.db).forEach(([date, d]) => {
       const m = new Date(date).getMonth();
       (d.expenses || []).forEach((e) => {
@@ -148,7 +249,6 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
       if (d.shop && d.shop > 0) result[m]['საჭირო'] += d.shop;
       if (d.other && d.other > 0) result[m]['სურვილი'] += d.other;
     });
-
     return result;
   }, [state.db]);
 
@@ -166,319 +266,283 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
     [state.db, dailyBudget]
   );
 
-  // კულაბის პროგრესი მიზნისკენ
   const goalAmount = state.goal || 0;
   const kulabaProgress = goalAmount > 0 ? Math.min((totalKulaba / goalAmount) * 100, 100) : 0;
 
+  // თვიური ბარ-ჩარტის მაქსიმუმი
+  const maxMonthlyInc = Math.max(...Object.values(monthlyStats).map((s) => s.inc), 1);
+
   return (
-    <div className="space-y-4">
-      {/* კულაბა მიმოხილვა */}
+    <div className="space-y-3">
+      {/* კულაბა */}
       <Card className="border-amber-700/50 bg-gradient-to-r from-amber-900/20 to-amber-800/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-amber-400 text-base flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            კულაბა
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-amber-300">დაგროვილი:</span>
-              <span className="font-bold ml-2 text-amber-200">{totalKulaba}₾</span>
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏺</span>
+              <div>
+                <p className="text-xs text-amber-400/70">კულაბა</p>
+                <p className="text-xl font-black text-amber-300">{totalKulaba}₾</p>
+              </div>
             </div>
             {goalAmount > 0 && (
-              <>
-                <div>
-                  <span className="text-amber-400/70">მიზანი:</span>
-                  <span className="font-bold ml-2">{goalAmount}₾</span>
-                </div>
-                <div>
-                  <span className="text-amber-400/70">დარჩენილი:</span>
-                  <span className="font-bold ml-2">{Math.max(0, goalAmount - totalKulaba)}₾</span>
-                </div>
-                <div>
-                  <span className="text-amber-400/70">პროგრესი:</span>
-                  <Badge variant={kulabaProgress >= 100 ? 'success' : 'warning'} className="ml-2">
-                    {Math.round(kulabaProgress)}%
-                  </Badge>
-                </div>
-              </>
+              <div className="text-right">
+                <Badge variant={kulabaProgress >= 100 ? 'success' : 'warning'}>{Math.round(kulabaProgress)}%</Badge>
+                <p className="text-[10px] text-amber-400/50 mt-0.5">{state.goalName || 'მიზანი'}: {goalAmount}₾</p>
+              </div>
             )}
           </div>
           {goalAmount > 0 && (
-            <div className="mt-3">
-              <Progress
-                value={kulabaProgress}
-                indicatorClassName={cn(
-                  'transition-all duration-700',
-                  kulabaProgress >= 100
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
-                    : 'bg-gradient-to-r from-amber-500 to-amber-400'
-                )}
-              />
-              {state.goalName && (
-                <p className="text-xs text-amber-400/60 mt-1 flex items-center gap-1">
-                  <Target className="w-3 h-3" /> {state.goalName}
-                </p>
-              )}
-            </div>
+            <Progress
+              value={kulabaProgress}
+              indicatorClassName={cn('transition-all duration-700', kulabaProgress >= 100 ? 'bg-emerald-500' : 'bg-amber-500')}
+            />
           )}
         </CardContent>
       </Card>
 
-      {/* საერთო მიმოხილვა */}
-      <Card className="border-yellow-700/50 bg-gradient-to-r from-yellow-900/20 to-yellow-800/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-yellow-400 text-base flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            საერთო მიმოხილვა
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-green-400">შემოსავალი:</span>
-              <span className="font-bold ml-1">{totalInc}₾</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-red-400">გასავალი:</span>
-              <span className="font-bold ml-1">{totalExp}₾</span>
-            </div>
-            <div>
-              <span className={netBalance >= 0 ? 'text-green-300' : 'text-red-300'}>ნეტო:</span>
-              <span className={cn('font-bold ml-2', netBalance >= 0 ? 'text-green-300' : 'text-red-300')}>
-                {netBalance >= 0 ? '+' : ''}{netBalance}₾
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Target className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-amber-400">კულაბა:</span>
-              <span className="font-bold ml-1">{totalKulaba}₾</span>
-            </div>
+      {/* ძირითადი მაჩვენებლები */}
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="border-green-700/30 bg-green-900/10">
+          <CardContent className="p-2.5 text-center">
+            <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
+            <p className="text-[10px] text-green-400/70">შემოსავალი</p>
+            <p className="text-lg font-black text-green-300">{totalInc}₾</p>
+            <p className="text-[9px] text-slate-500">საშ. {avgDailyIncome}₾/დღე</p>
+          </CardContent>
+        </Card>
+        <Card className="border-red-700/30 bg-red-900/10">
+          <CardContent className="p-2.5 text-center">
+            <TrendingDown className="w-4 h-4 text-red-400 mx-auto mb-1" />
+            <p className="text-[10px] text-red-400/70">გასავალი</p>
+            <p className="text-lg font-black text-red-300">{totalExp}₾</p>
+            <p className="text-[9px] text-slate-500">საშ. {avgDailyExpense}₾/დღე</p>
+          </CardContent>
+        </Card>
+        <Card className={cn('border-slate-700/30', netBalance >= 0 ? 'bg-emerald-900/10' : 'bg-red-900/10')}>
+          <CardContent className="p-2.5 text-center">
+            <Wallet className="w-4 h-4 mx-auto mb-1" style={{ color: netBalance >= 0 ? '#10b981' : '#ef4444' }} />
+            <p className="text-[10px] text-slate-400">ნეტო ბალანსი</p>
+            <p className={cn('text-lg font-black', netBalance >= 0 ? 'text-green-300' : 'text-red-300')}>
+              {netBalance >= 0 ? '+' : ''}{netBalance}₾
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-orange-700/30 bg-orange-900/10">
+          <CardContent className="p-2.5 text-center">
+            <Flame className="w-4 h-4 text-orange-400 mx-auto mb-1" />
+            <p className="text-[10px] text-orange-400/70">სტრიქი</p>
+            <p className="text-lg font-black text-orange-300">{streaks.current} დღე</p>
+            <p className="text-[9px] text-slate-500">ბესტ: {streaks.best} დღე</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* პროგრესი */}
+      <Card className="border-slate-700/30">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" /> შევსებული:</span>
+            <span className="font-bold">{filledDays}/365</span>
+          </div>
+          <Progress value={(filledDays / 365) * 100} indicatorClassName="bg-slate-400" className="h-1.5" />
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-400 flex items-center gap-1"><Target className="w-3 h-3" /> გეგმა შესრულებული:</span>
+            <span className="font-bold text-green-400">{daysWithGoal} დღე ({filledDays > 0 ? Math.round((daysWithGoal / filledDays) * 100) : 0}%)</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* სტრიქ და პროგრესი */}
-      <Card className="border-green-700/50 bg-gradient-to-r from-green-900/20 to-green-800/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-green-400 text-base flex items-center gap-2">
-            <Flame className="w-5 h-5" />
-            პროგრესი
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
-                მიმდინარე სტრიქი:
-              </span>
-              <Badge variant="success">{streaks.current} დღე</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-yellow-400" />
-                საუკეთესო სტრიქი:
-              </span>
-              <Badge variant="warning">{streaks.best} დღე</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                შევსებული დღეები:
-              </span>
-              <span className="font-bold">{filledDays}/365</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-green-400" />
-                გეგმის შესრულება ({dailyBudget}₾+):
-              </span>
-              <Badge variant="success">{daysWithGoal} დღე</Badge>
-            </div>
-            {filledDays > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">წარმატების %:</span>
-                <Badge variant={(daysWithGoal / filledDays) >= 0.5 ? 'success' : 'danger'}>
-                  {Math.round((daysWithGoal / filledDays) * 100)}%
-                </Badge>
+      {/* ტოპ ხარჯვის კატეგორიები */}
+      {topSubcategories.length > 0 && (
+        <Card className="border-slate-700/30">
+          <CardHeader className="pb-1 px-3 pt-3">
+            <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4" /> სად იხარჯება ფული
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 space-y-2">
+            {topSubcategories.slice(0, 10).map((sub) => (
+              <HBar key={sub.name} label={sub.name} value={sub.amount} max={maxSubcategoryAmount} color={sub.color} icon={sub.icon} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* კომუნალური დეტალები */}
+      {utilityTotals.length > 0 && (
+        <Card className="border-teal-700/30 bg-teal-900/10">
+          <CardHeader className="pb-1 px-3 pt-3">
+            <CardTitle className="text-sm text-teal-300 flex items-center gap-1.5">
+              <Zap className="w-4 h-4" /> კომუნალური — {utilityTotal}₾
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 space-y-1.5">
+            {utilityTotals.map((util) => (
+              <div key={util.name} className="flex items-center justify-between px-2 py-1 rounded-md" style={{ backgroundColor: `${util.color}10` }}>
+                <span className="text-xs flex items-center gap-1.5">
+                  <span>{util.icon}</span>
+                  <span style={{ color: util.color }} className="font-bold">{util.name}</span>
+                </span>
+                <span className="text-xs font-black" style={{ color: util.color }}>{util.amount}₾</span>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* ხარჯების კატეგორიები - საერთო */}
-      <Card className="border-slate-600/50 bg-gradient-to-r from-slate-800/50 to-slate-700/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-slate-300 text-base flex items-center gap-2">
-            <PieChart className="w-5 h-5" />
-            ხარჯების კატეგორიები (საერთო)
+      {/* დამატებითი შემოსავლის წყაროები */}
+      {extraIncomeSources.length > 0 && (
+        <Card className="border-emerald-700/30 bg-emerald-900/10">
+          <CardHeader className="pb-1 px-3 pt-3">
+            <CardTitle className="text-sm text-emerald-300 flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4" /> დამატებითი შემოსავალი — {totalExtraIncome}₾
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 space-y-1.5">
+            {extraIncomeSources.map((src) => (
+              <div key={src.name} className="flex items-center justify-between px-2 py-1 rounded-md" style={{ backgroundColor: `${src.color}10` }}>
+                <span className="text-xs flex items-center gap-1.5">
+                  <span>{src.icon}</span>
+                  <span style={{ color: src.color }} className="font-bold">{src.name}</span>
+                  {src.count > 1 && <span className="text-[9px] text-slate-500">({src.count}x)</span>}
+                </span>
+                <span className="text-xs font-black" style={{ color: src.color }}>{src.amount}₾</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ხარჯების კატეგორიები - donut */}
+      <Card className="border-slate-600/30">
+        <CardHeader className="pb-1 px-3 pt-3">
+          <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+            <PieChart className="w-4 h-4" /> ხარჯების კატეგორიები
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3">
           <DonutChart data={totalCategoryTotals} size={140} />
         </CardContent>
       </Card>
 
-      {/* ხარჯების კატეგორიები - თვიური */}
-      <Card className="border-slate-600/50 bg-transparent">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-slate-300 text-base flex items-center gap-2">
-            <PieChart className="w-5 h-5" />
-            ხარჯების კატეგორიები (თვიურად)
+      {/* თვიური ბარ-ჩარტი */}
+      <Card className="border-slate-600/30">
+        <CardHeader className="pb-1 px-3 pt-3">
+          <CardTitle className="text-sm text-yellow-400 flex items-center gap-1.5">
+            <BarChart3 className="w-4 h-4" /> თვიური შედარება
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3">
+        <CardContent className="p-3 space-y-2">
+          {MONTH_NAMES.map((month, index) => {
+            const stat = monthlyStats[index];
+            if (stat.inc === 0 && stat.exp === 0) return null;
+            const balance = stat.inc - stat.exp;
+
+            return (
+              <div key={index} className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-yellow-400 font-bold w-20">{month}</span>
+                  <div className="flex gap-3 text-[10px]">
+                    <span className="text-green-400">+{stat.inc}₾</span>
+                    <span className="text-red-400">-{stat.exp}₾</span>
+                    <span className={cn('font-bold', balance >= 0 ? 'text-emerald-300' : 'text-red-300')}>
+                      {balance >= 0 ? '+' : ''}{balance}₾
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-0.5 h-2.5">
+                  <div className="bg-green-500/80 rounded-l-full transition-all" style={{ width: `${(stat.inc / maxMonthlyInc) * 100}%` }} />
+                  <div className="bg-red-500/60 rounded-r-full transition-all" style={{ width: `${(stat.exp / maxMonthlyInc) * 100}%` }} />
+                </div>
+                {stat.kulaba > 0 && (
+                  <p className="text-[9px] text-amber-400/60">🏺 {stat.kulaba}₾</p>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* ვალები & ბილები */}
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="border-purple-700/30 bg-purple-900/10">
+          <CardContent className="p-2.5">
+            <div className="flex items-center gap-1.5 mb-2">
+              <CreditCard className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-xs font-bold text-purple-300">ვალები</span>
+            </div>
+            <div className="space-y-1 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-purple-300/70">გადახდილი:</span>
+                <span className="font-bold text-purple-300">{debtsPaid}₾</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-purple-400/70">დარჩენილი:</span>
+                <span className="font-bold text-purple-400">{debtsRemaining}₾</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-purple-700/30">
+                <span className="text-purple-200/70">სულ:</span>
+                <span className="font-bold text-purple-200">{debtsTotal}₾</span>
+              </div>
+            </div>
+            {debtsTotal > 0 && (
+              <Progress value={(debtsPaid / debtsTotal) * 100} indicatorClassName="bg-purple-400" className="h-1 mt-2" />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-700/30 bg-blue-900/10">
+          <CardContent className="p-2.5">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Receipt className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-bold text-blue-300">გადასახადი</span>
+            </div>
+            <div className="space-y-1 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-blue-300/70">გადახდილი:</span>
+                <span className="font-bold text-blue-300">{billsPaid}₾</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-400/70">დარჩენილი:</span>
+                <span className="font-bold text-blue-400">{billsRemaining}₾</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-blue-700/30">
+                <span className="text-blue-200/70">სულ:</span>
+                <span className="font-bold text-blue-200">{billsTotal}₾</span>
+              </div>
+            </div>
+            {billsTotal > 0 && (
+              <Progress value={(billsPaid / billsTotal) * 100} indicatorClassName="bg-blue-400" className="h-1 mt-2" />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* თვიური კატეგორიები */}
+      <Card className="border-slate-600/30">
+        <CardHeader className="pb-1 px-3 pt-3">
+          <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+            <PieChart className="w-4 h-4" /> კატეგორიები თვიურად
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-2 gap-2">
             {MONTH_NAMES.map((month, index) => {
               const catData = monthlyCategoryTotals[index];
               const hasData = Object.values(catData).some((v) => v > 0);
               if (!hasData) return null;
 
               return (
-                <Card key={index} className="border-slate-600 bg-slate-800/50">
-                  <CardContent className="p-3">
-                    <p className="text-sm font-bold text-yellow-400 mb-2 text-center">{month}</p>
-                    <DonutChart data={catData} size={100} />
+                <Card key={index} className="border-slate-700/50 bg-slate-800/30">
+                  <CardContent className="p-2">
+                    <p className="text-[11px] font-bold text-yellow-400 mb-1 text-center">{month}</p>
+                    <DonutChart data={catData} size={90} />
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* თვიური ანალიტიკა */}
-      <Card className="border-slate-600/50 bg-transparent">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-yellow-400 text-base flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            თვიური ანალიტიკა
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex overflow-x-auto pb-2 gap-3">
-            {MONTH_NAMES.map((month, index) => {
-              const stat = monthlyStats[index];
-              const balance = stat.inc - stat.exp;
-
-              return (
-                <Card
-                  key={index}
-                  className="flex-shrink-0 border-slate-600 bg-slate-800/50"
-                  style={{ minWidth: '160px' }}
-                >
-                  <CardContent className="p-3">
-                    <div className="text-sm font-bold text-yellow-400 mb-2">{month}</div>
-                    <div className="text-xs space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-green-400 flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" /> შემ:
-                        </span>
-                        <span>{stat.inc}₾</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-red-400 flex items-center gap-1">
-                          <TrendingDown className="w-3 h-3" /> გასა:
-                        </span>
-                        <span>{stat.exp}₾</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-amber-300 flex items-center gap-1">
-                          <Target className="w-3 h-3" />
-                        </span>
-                        <span>{stat.kulaba}₾</span>
-                      </div>
-                      <div className="flex justify-between pt-1 border-t border-slate-600">
-                        <span className="text-blue-300">ბილი:</span>
-                        <span>{stat.bills}₾</span>
-                      </div>
-                      <div className="flex justify-between text-blue-200 text-xs">
-                        <span>&#10003;</span>
-                        <span>{stat.bills_paid}₾</span>
-                      </div>
-                      <div className="flex justify-between text-blue-200 text-xs">
-                        <span>&#9671;</span>
-                        <span>{stat.bills_remaining}₾</span>
-                      </div>
-                      <div className="flex justify-between pt-1 border-t border-slate-600 font-bold">
-                        <span className={balance >= 0 ? 'text-green-400' : 'text-red-400'}>ბ:</span>
-                        <span className={balance >= 0 ? 'text-green-400' : 'text-red-400'}>{balance}₾</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ვალების სტატუსი */}
-      <Card className="border-purple-700/50 bg-gradient-to-r from-purple-900/30 to-purple-800/20">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-purple-400 text-base">ვალების სტატუსი</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-purple-300">&#10003; გადახდილი:</span>
-            <span className="font-bold text-purple-300">{debtsPaid}₾</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-purple-400">&#9671; დარჩენილი:</span>
-            <span className="font-bold text-purple-400">{debtsRemaining}₾</span>
-          </div>
-          <div className="flex justify-between text-sm text-purple-200 mt-2 pt-2 border-t border-purple-700">
-            <span>სულ:</span>
-            <span className="font-bold">{debtsTotal}₾</span>
-          </div>
-          {debtsTotal > 0 && (
-            <div className="mt-2">
-              <Progress
-                value={(debtsPaid / debtsTotal) * 100}
-                indicatorClassName="bg-purple-400 transition-all duration-500"
-              />
-              <p className="text-xs text-purple-300 mt-1 text-right">
-                {Math.round((debtsPaid / debtsTotal) * 100)}% გადახდილი
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ბილების სტატუსი */}
-      <Card className="border-blue-700/50 bg-gradient-to-r from-blue-900/30 to-blue-800/20">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-blue-400 text-base">ბილების სტატუსი</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-blue-300">&#10003; გადახდილი:</span>
-            <span className="font-bold text-blue-300">{billsPaid}₾</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-blue-400">&#9671; დარჩენილი:</span>
-            <span className="font-bold text-blue-400">{billsRemaining}₾</span>
-          </div>
-          <div className="flex justify-between text-sm text-blue-200 mt-2 pt-2 border-t border-blue-700">
-            <span>სულ:</span>
-            <span className="font-bold">{billsTotal}₾</span>
-          </div>
-          {billsTotal > 0 && (
-            <div className="mt-2">
-              <Progress
-                value={(billsPaid / billsTotal) * 100}
-                indicatorClassName="bg-blue-400 transition-all duration-500"
-              />
-              <p className="text-xs text-blue-300 mt-1 text-right">
-                {Math.round((billsPaid / billsTotal) * 100)}% გადახდილი
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
