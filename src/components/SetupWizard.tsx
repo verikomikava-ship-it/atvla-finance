@@ -1259,11 +1259,81 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                         <Input type="month" value={bankEnd} onChange={(e) => setBankEnd(e.target.value)} className="h-9 text-sm" />
                       </div>
                     </div>
-                    {bankStart && bankEnd && bankStart <= bankEnd && (
-                      <p className="text-[10px] text-muted-foreground text-center">
-                        ვადა: <span className="font-bold text-slate-800 dark:text-slate-200">{bankMonthsBetween(bankStart, bankEnd)} თვე</span>
-                      </p>
-                    )}
+                    {/* კალკულაციის პანელი */}
+                    {(() => {
+                      const principal = parseInt(bankPrincipal) || 0;
+                      const monthly = parseInt(bankInterest) || 0;
+                      const hasdates = bankStart && bankEnd && bankStart <= bankEnd;
+                      const totalMonths = hasdates ? bankMonthsBetween(bankStart, bankEnd) : 0;
+                      const monthlyRate = principal > 0 ? (monthly / principal) * 100 : 0;
+                      const annualRate = monthlyRate * 12;
+                      const totalInterest = monthly * totalMonths;
+                      const totalCost = principal + totalInterest;
+
+                      // დარჩენილი თვეები
+                      const now = new Date();
+                      const nowStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                      let remaining = 0;
+                      if (hasdates) {
+                        const [ey, em] = bankEnd.split('-').map(Number);
+                        remaining = Math.max(0, (ey - now.getFullYear()) * 12 + (em - (now.getMonth() + 1)));
+                      }
+
+                      if (!principal && !monthly && !hasdates) return null;
+
+                      return (
+                        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5 animate-fadeIn">
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">📊 კალკულაცია</p>
+                          {principal > 0 && monthly > 0 && (
+                            <>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">თვიური %:</span>
+                                <span className="font-bold text-orange-600 dark:text-orange-400">{monthlyRate.toFixed(2)}%</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">წლიური ეფექტური %:</span>
+                                <span className="font-bold text-red-600 dark:text-red-400">{annualRate.toFixed(1)}%</span>
+                              </div>
+                            </>
+                          )}
+                          {hasdates && totalMonths > 0 && (
+                            <>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">სრული ვადა:</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">{totalMonths} თვე</span>
+                              </div>
+                              {remaining > 0 && (
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground">დარჩენილია:</span>
+                                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                                    {remaining} თვე ({Math.floor(remaining / 12) > 0 ? `${Math.floor(remaining / 12)} წ. ${remaining % 12} თვ.` : `${remaining} თვ.`})
+                                  </span>
+                                </div>
+                              )}
+                              {remaining === 0 && bankEnd < nowStr && (
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground">სტატუსი:</span>
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">✅ ვადა ამოწურულია</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {monthly > 0 && totalMonths > 0 && (
+                            <>
+                              <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">ჯამური პროცენტი:</span>
+                                <span className="font-bold text-orange-600 dark:text-orange-400">{totalInterest.toLocaleString()}₾</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">ჯამური ღირებულება:</span>
+                                <span className="font-bold text-red-700 dark:text-red-400">{totalCost.toLocaleString()}₾</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <Button onClick={addBankItem} className="w-full h-9" variant="default">
                       <Plus className="w-4 h-4 mr-1.5" /> დამატება
                     </Button>
