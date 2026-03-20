@@ -156,7 +156,7 @@ export type Loan = {
 };
 
 // ბანკი / საკრედიტო პროდუქტები
-export type BankProductType = 'იპოთეკური სესხი' | 'სესხი' | 'საკრედიტო ბარათი' | 'განვადება' | 'ნაწილ-ნაწილ გადახდა' | 'სხვა';
+export type BankProductType = 'იპოთეკური სესხი' | 'სესხი' | 'საკრედიტო ბარათი' | 'განვადება' | 'ნაწილ-ნაწილ გადახდა' | 'მანქანის ლობარდი' | 'მანქანის ლიზინგი' | 'სხვა';
 
 export const BANK_PRODUCT_TYPES: { key: BankProductType; label: string; icon: string; color: string }[] = [
   { key: 'იპოთეკური სესხი', label: 'იპოთეკური სესხი', icon: '🏠', color: '#ef4444' },
@@ -164,6 +164,8 @@ export const BANK_PRODUCT_TYPES: { key: BankProductType; label: string; icon: st
   { key: 'საკრედიტო ბარათი', label: 'საკრედიტო ბარათი', icon: '💳', color: '#8b5cf6' },
   { key: 'განვადება', label: 'განვადება', icon: '📋', color: '#3b82f6' },
   { key: 'ნაწილ-ნაწილ გადახდა', label: 'ნაწილ-ნაწილ გადახდა', icon: '🔢', color: '#06b6d4' },
+  { key: 'მანქანის ლობარდი', label: 'მანქანის ლობარდი', icon: '🚗', color: '#d97706' },
+  { key: 'მანქანის ლიზინგი', label: 'მანქანის ლიზინგი', icon: '🚙', color: '#059669' },
   { key: 'სხვა', label: 'სხვა', icon: '📝', color: '#64748b' },
 ];
 
