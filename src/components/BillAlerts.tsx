@@ -55,11 +55,11 @@ export const BillAlerts: React.FC<BillAlertsProps> = ({ bills, debts, subscripti
     <div className="mb-3">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700 hover:border-slate-600 transition-colors text-xs font-bold"
+        className="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-300 transition-colors text-xs font-bold shadow-sm"
       >
         <span className="flex items-center gap-2">
-          <Bell className="h-3.5 w-3.5 text-yellow-400" />
-          <span className="text-slate-300">
+          <Bell className="h-3.5 w-3.5 text-blue-500" />
+          <span className="text-slate-700 dark:text-slate-300">
             გადასახდელები ({warnings.length})
           </span>
           {urgentCount > 0 && (
@@ -70,9 +70,9 @@ export const BillAlerts: React.FC<BillAlertsProps> = ({ bills, debts, subscripti
           )}
         </span>
         {isOpen ? (
-          <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
+          <ChevronUp className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
         ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+          <ChevronDown className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
         )}
       </button>
 
@@ -87,14 +87,14 @@ export const BillAlerts: React.FC<BillAlertsProps> = ({ bills, debts, subscripti
 
             {todayWarnings.length > 0 && (
               <div className="space-y-1">
-                <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider mt-1">დღეს გადასახდელი:</p>
+                <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase tracking-wider mt-1">დღეს გადასახდელი:</p>
                 {todayWarnings.map(renderWarning)}
               </div>
             )}
 
             {upcomingWarnings.length > 0 && (
               <div className="space-y-1">
-                <p className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider mt-1">მოახლოვებული:</p>
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider mt-1">მოახლოვებული:</p>
                 {upcomingWarnings.map(renderWarning)}
               </div>
             )}

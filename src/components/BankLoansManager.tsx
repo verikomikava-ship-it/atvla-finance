@@ -160,7 +160,7 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
                   key={idx}
                   className={cn(
                     'flex-1 h-2 rounded-sm transition-all',
-                    idx < paidMonths ? '' : 'bg-slate-700'
+                    idx < paidMonths ? '' : 'bg-slate-200 dark:bg-slate-700'
                   )}
                   style={idx < paidMonths ? { backgroundColor: color } : undefined}
                 />
@@ -173,7 +173,7 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
     // 36+ თვე — პროგრეს ბარი
     return (
       <div className="mt-1.5">
-        <Progress value={(paidMonths / totalMonths) * 100} className="h-2 bg-slate-700" indicatorClassName="" style={{ ['--indicator-color' as string]: color }} />
+        <Progress value={(paidMonths / totalMonths) * 100} className="h-2 bg-slate-200 dark:bg-slate-700" indicatorClassName="" style={{ ['--indicator-color' as string]: color }} />
       </div>
     );
   };
@@ -217,24 +217,24 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
                 <span className="text-sm">{typeInfo?.icon}</span>
                 <p className="font-bold text-xs" style={{ color: typeInfo?.color }}>{typeInfo?.label}</p>
                 {loan.name && (
-                  <span className="text-[10px] text-slate-400">· {loan.name}</span>
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400">· {loan.name}</span>
                 )}
               </div>
 
               {/* ძირი + პროცენტი */}
               <div className="flex gap-3 text-xs mt-0.5">
                 <div>
-                  <span className="text-slate-400">ძირი: </span>
-                  <span className="font-bold text-red-400">{loan.principal}₾</span>
+                  <span className="text-slate-600 dark:text-slate-400">ძირი: </span>
+                  <span className="font-bold text-red-600 dark:text-red-400">{loan.principal}₾</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">%/თვე: </span>
-                  <span className="font-bold text-orange-400">{loan.monthlyInterest}₾</span>
+                  <span className="text-slate-600 dark:text-slate-400">%/თვე: </span>
+                  <span className="font-bold text-orange-600 dark:text-orange-400">{loan.monthlyInterest}₾</span>
                 </div>
               </div>
 
               {/* ვადა */}
-              <div className="text-[10px] text-slate-400 mt-1">
+              <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-1">
                 📅 {formatYM(loan.startDate)} — {formatYM(loan.endDate)} ({loan.totalMonths} თვე)
               </div>
 
@@ -247,17 +247,17 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
                       {debt.paidAmount || 0}₾ / {debt.amount}₾
                     </span>
                   </div>
-                  <Progress value={debtProgress} className="h-1.5 bg-slate-800" indicatorClassName={''} />
+                  <Progress value={debtProgress} className="h-1.5 bg-slate-200 dark:bg-slate-700" indicatorClassName={''} />
                 </div>
               )}
               {debt?.paid && (
-                <p className="text-[10px] text-green-400 mt-1 font-bold">✅ ძირი თანხა დაფარულია</p>
+                <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 font-bold">✅ ძირი თანხა დაფარულია</p>
               )}
 
               {/* თვეების კუბიკები */}
               <div className="mt-1">
                 <div className="flex justify-between text-[10px] mb-0.5">
-                  <span className="text-slate-400">თვეები:</span>
+                  <span className="text-slate-600 dark:text-slate-400">თვეები:</span>
                   <span className="font-bold" style={{ color: typeInfo?.color }}>
                     {monthsPassed}/{loan.totalMonths} ({paidBills} გადახდილი)
                   </span>
@@ -282,10 +282,10 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
 
             {/* მოქმედებები */}
             <div className="flex items-center gap-0.5 ml-1">
-              <Button variant="ghost" size="icon" onClick={() => startEdit(loan)} className="h-6 w-6 text-slate-400 hover:text-slate-200">
+              <Button variant="ghost" size="icon" onClick={() => startEdit(loan)} className="h-6 w-6 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
                 <Pencil className="h-3 w-3" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleRemove(loan)} className="h-6 w-6 text-red-400 hover:text-red-300">
+              <Button variant="ghost" size="icon" onClick={() => handleRemove(loan)} className="h-6 w-6 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
                 <X className="h-3 w-3" />
               </Button>
             </div>
@@ -308,10 +308,10 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
             key={type.key}
             onClick={() => setSelectedType(selectedType === type.key ? null : type.key)}
             className={cn(
-              'flex items-center gap-1.5 p-2 rounded-lg border-2 transition-all text-left',
+              'flex items-center gap-1.5 p-2 rounded-xl border-2 transition-all text-left',
               selectedType === type.key
                 ? 'scale-[1.02]'
-                : 'border-slate-700/50 opacity-60 hover:opacity-100'
+                : 'border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100'
             )}
             style={{
               borderColor: selectedType === type.key ? type.color : undefined,
@@ -340,18 +340,18 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
 
           <div className="flex gap-1.5">
             <div className="flex-1">
-              <label className="text-[10px] text-slate-400 mb-0.5 block">ვადის დასაწყისი *</label>
+              <label className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5 block">ვადის დასაწყისი *</label>
               <Input type="month" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={COMPACT_INPUT} />
             </div>
             <div className="flex-1">
-              <label className="text-[10px] text-slate-400 mb-0.5 block">ვადის დასასრული *</label>
+              <label className="text-[10px] text-slate-600 dark:text-slate-400 mb-0.5 block">ვადის დასასრული *</label>
               <Input type="month" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={COMPACT_INPUT} />
             </div>
           </div>
 
           {startDate && endDate && startDate <= endDate && (
-            <p className="text-[10px] text-slate-400 text-center">
-              ვადა: <span className="font-bold text-slate-200">{monthsBetween(startDate, endDate)} თვე</span>
+            <p className="text-[10px] text-slate-600 dark:text-slate-400 text-center">
+              ვადა: <span className="font-bold text-slate-800 dark:text-slate-200">{monthsBetween(startDate, endDate)} თვე</span>
             </p>
           )}
 
@@ -363,21 +363,21 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
 
       {/* სტატისტიკა */}
       {activeLoans.length > 0 && (
-        <Card className="bg-blue-500/10 border-blue-700/50">
+        <Card className="bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-700/50">
           <CardContent className="p-2 space-y-1">
             <div className="flex justify-between text-xs">
-              <span className="text-blue-300">აქტიური:</span>
-              <span className="font-bold text-blue-300">{activeLoans.length}</span>
+              <span className="text-blue-700 dark:text-blue-300">აქტიური:</span>
+              <span className="font-bold text-blue-700 dark:text-blue-300">{activeLoans.length}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-red-300">სულ ძირი:</span>
-              <span className="font-bold text-red-300">{totalPrincipal}₾</span>
+              <span className="text-red-600 dark:text-red-400">სულ ძირი:</span>
+              <span className="font-bold text-red-600 dark:text-red-400">{totalPrincipal}₾</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-orange-300">ყოველთვიური %:</span>
-              <span className="font-bold text-orange-300">{totalMonthlyInterest}₾</span>
+              <span className="text-orange-600 dark:text-orange-400">ყოველთვიური %:</span>
+              <span className="font-bold text-orange-600 dark:text-orange-400">{totalMonthlyInterest}₾</span>
             </div>
-            <div className="flex justify-between text-xs text-blue-200 pt-1.5 border-t border-blue-700">
+            <div className="flex justify-between text-xs text-blue-700 dark:text-blue-300 pt-1.5 border-t border-blue-200 dark:border-blue-700/50">
               <span>ყოველთვიური სულ:</span>
               <span className="font-bold">{totalMonthlyInterest}₾</span>
             </div>
@@ -388,9 +388,9 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
       {/* სია */}
       <div className="space-y-2">
         {activeLoans.length === 0 && closedLoans.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">საბანკო პროდუქტი არ დამატებულა</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">საბანკო პროდუქტი არ დამატებულა</p>
         ) : activeLoans.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">ყველა დახურულია</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">ყველა დახურულია</p>
         ) : (
           activeLoans.map(renderLoanCard)
         )}
@@ -402,7 +402,7 @@ export const BankLoansManager: React.FC<BankLoansManagerProps> = ({
           <Button
             variant="ghost"
             onClick={() => setShowClosed(!showClosed)}
-            className="w-full flex justify-between items-center text-sm font-bold text-green-400 border-t border-slate-700 rounded-none pt-3"
+            className="w-full flex justify-between items-center text-sm font-bold text-green-600 dark:text-green-400 border-t border-slate-200 dark:border-slate-700 rounded-none pt-3"
           >
             <span className="flex items-center gap-1">
               <Check className="h-4 w-4" />

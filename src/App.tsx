@@ -20,10 +20,12 @@ import { DiaryView } from '@/components/DiaryView';
 import { SetupWizard } from '@/components/SetupWizard';
 import { AuthModal } from '@/components/AuthModal';
 import { cn } from '@/lib/utils';
-import { Menu, X, Cloud, CloudOff } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
+import { Menu, X, Cloud, CloudOff, Moon, Sun } from 'lucide-react';
 import './App.css';
 
 export const App: React.FC = () => {
+  const { isDark, toggleTheme } = useTheme();
   const { state, updateState } = useAppState();
   const {
     user,
@@ -733,7 +735,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200">
+    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 text-slate-800 dark:text-slate-200">
       {/* Main scrollable area (header + calendar) */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         <Header
@@ -752,11 +754,11 @@ export const App: React.FC = () => {
         </main>
 
         {/* Mobile: month selector + sidebar toggle */}
-        <div className="md:hidden flex items-center gap-2 px-3 py-2 sticky bottom-0 bg-slate-900/95 backdrop-blur border-t border-slate-700/50">
+        <div className="md:hidden flex items-center gap-2 px-3 py-2 sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-700">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="flex-1 bg-slate-800/80 text-slate-200 px-3 py-2 rounded-md border border-slate-600 text-sm"
+            className="flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm"
           >
             {MONTH_NAMES.map((month, index) => (
               <option key={index} value={index.toString()}>
@@ -767,7 +769,7 @@ export const App: React.FC = () => {
           </select>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="bg-yellow-500 text-slate-900 px-3 py-2 rounded-md font-bold text-sm flex items-center gap-1"
+            className="bg-gradient-to-r from-blue-600 to-emerald-600 text-white px-3 py-2 rounded-xl font-bold text-sm flex items-center gap-1"
           >
             <Menu className="w-4 h-4" />
             მენიუ
@@ -777,20 +779,20 @@ export const App: React.FC = () => {
 
       {/* Sidebar: overlay on mobile, fixed on desktop */}
       {sidebarOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setSidebarOpen(false)} />
+        <div className="md:hidden fixed inset-0 bg-black/30 z-40" onClick={() => setSidebarOpen(false)} />
       )}
       <aside className={cn(
-        'bg-slate-900/95 backdrop-blur border-l border-slate-700/50 flex flex-col',
+        'bg-white/95 dark:bg-slate-900/95 backdrop-blur border-l border-slate-200 dark:border-slate-700 flex flex-col',
         // Desktop
         'hidden md:flex md:w-96 md:h-screen md:relative',
         // Mobile overlay
         sidebarOpen && '!flex fixed inset-y-0 right-0 w-[85vw] max-w-96 z-50 h-screen'
       )}>
-        <div className="p-3 border-b border-slate-700/50 flex items-center gap-2">
+        <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="flex-1 bg-slate-800/80 text-slate-200 px-3 py-2 rounded-md border border-slate-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/30 outline-none transition-colors text-sm"
+            className="flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-colors text-sm"
           >
             {MONTH_NAMES.map((month, index) => (
               <option key={index} value={index.toString()}>
@@ -801,13 +803,13 @@ export const App: React.FC = () => {
           </select>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-1.5 rounded-md hover:bg-slate-700"
+            className="md:hidden p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="border-b border-slate-700/50">
+        <div className="border-b border-slate-200 dark:border-slate-700">
           <div className="flex text-xs font-bold">
             {tabsRow1.map((tab) => (
               <button
@@ -816,8 +818,8 @@ export const App: React.FC = () => {
                 className={cn(
                   'flex-1 py-1.5 px-1 transition-all duration-200 border-b-2 flex items-center justify-center gap-1',
                   activeTab === tab.key
-                    ? 'text-yellow-400 border-yellow-400 bg-yellow-400/5'
-                    : 'text-slate-400 border-transparent hover:text-slate-300 hover:bg-slate-800/50'
+                    ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'text-slate-400 border-transparent hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
                 <span className="text-[10px]">{tab.icon}</span>
@@ -833,8 +835,8 @@ export const App: React.FC = () => {
                 className={cn(
                   'flex-1 py-1.5 px-1 transition-all duration-200 border-b-2 flex items-center justify-center gap-1',
                   activeTab === tab.key
-                    ? 'text-yellow-400 border-yellow-400 bg-yellow-400/5'
-                    : 'text-slate-400 border-transparent hover:text-slate-300 hover:bg-slate-800/50'
+                    ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'text-slate-400 border-transparent hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
                 <span className="text-[10px]">{tab.icon}</span>
@@ -918,6 +920,15 @@ export const App: React.FC = () => {
       </aside>
 
       <ToolsMenu state={state} onImport={handleImportData} onReset={handleResetData} onRerunSetup={handleRerunSetup} />
+
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="fixed bottom-4 left-[4.5rem] w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-50 transition-colors bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600"
+        title={isDark ? 'ღია თემა' : 'მუქი თემა'}
+      >
+        {isDark ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+      </button>
 
       {/* ღრუბლის ღილაკი */}
       {!authLoading && (

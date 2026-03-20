@@ -141,20 +141,20 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="flex-shrink-0 bg-background px-3 py-2 border-b border-border">
       {/* კულაბა - კომპაქტური */}
-      <Card className="mb-2 border-primary/30 bg-primary/5">
+      <Card className="mb-2 border-blue-200 dark:border-blue-700 bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-900/20 dark:to-emerald-900/20">
         <CardContent className="px-3 py-2">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-1.5">
               <span className="text-base">🏺</span>
               <div>
-                <h2 className="text-primary font-bold text-sm">ჩემი კულაბა</h2>
-                <p className="text-muted-foreground text-[10px]">დაგროვებული თანხა</p>
+                <h2 className="text-blue-700 dark:text-blue-300 font-bold text-sm">ჩემი კულაბა</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px]">დაგროვებული თანხა</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-lg font-black text-primary">{totalKulaba}₾</p>
+              <p className="text-lg font-black text-blue-700 dark:text-blue-300">{totalKulaba}₾</p>
               {goalAmount > 0 && (
-                <p className="text-[10px] text-primary/60">/ {goalAmount}₾</p>
+                <p className="text-[10px] text-blue-400">/ {goalAmount}₾</p>
               )}
             </div>
           </div>
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
           {goalAmount > 0 && (
             <div className="mt-1.5">
               <Progress value={kulabaProgress} className="h-2" indicatorClassName={progressIndicatorClass} />
-              <p className="text-[9px] text-primary/60 text-right mt-0.5">{Math.round(kulabaProgress)}%</p>
+              <p className="text-[9px] text-blue-400 text-right mt-0.5">{Math.round(kulabaProgress)}%</p>
             </div>
           )}
 
@@ -197,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <div onClick={openGoalEditor} className="mt-1 cursor-pointer group">
               {goalAmount > 0 ? (
-                <p className="text-xs text-primary/80 group-hover:text-primary transition-colors flex items-center gap-1">
+                <p className="text-xs text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors flex items-center gap-1">
                   <Target className="h-3 w-3" />
                   {state.goalName || 'მიზანი'}: <span className="font-bold">{goalAmount}₾</span>
                   <Pencil className="h-2.5 w-2.5 text-muted-foreground ml-1" />
@@ -284,53 +284,53 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* სტატ ბოქსები - კომპაქტური */}
       <div className="grid grid-cols-5 gap-2 text-center">
-        <Card className="border-0 bg-emerald-500/10">
+        <Card className="border-0 bg-emerald-50 dark:bg-emerald-900/20">
           <CardContent className="p-2">
-            <TrendingUp className="h-3 w-3 text-emerald-400 mx-auto mb-0.5" />
-            <p className="text-emerald-300 font-bold text-sm">{totalInc}₾</p>
-            <p className="text-emerald-200/70 text-[10px]">შემოსავალი</p>
+            <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400 mx-auto mb-0.5" />
+            <p className="text-emerald-700 dark:text-emerald-300 font-bold text-sm">{totalInc}₾</p>
+            <p className="text-emerald-500 dark:text-emerald-400 text-[10px]">შემოსავალი</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-red-500/10">
+        <Card className="border-0 bg-red-50 dark:bg-red-900/20">
           <CardContent className="p-2">
-            <TrendingDown className="h-3 w-3 text-red-400 mx-auto mb-0.5" />
-            <p className="text-red-300 font-bold text-sm">{totalExp}₾</p>
-            <p className="text-red-200/70 text-[10px]">გასავალი</p>
+            <TrendingDown className="h-3 w-3 text-red-500 mx-auto mb-0.5" />
+            <p className="text-red-600 dark:text-red-400 font-bold text-sm">{totalExp}₾</p>
+            <p className="text-red-400 text-[10px]">გასავალი</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-purple-500/10">
+        <Card className="border-0 bg-purple-50 dark:bg-purple-900/20">
           <CardContent className="p-2">
-            <CreditCard className="h-3 w-3 text-purple-400 mx-auto mb-0.5" />
-            <p className="text-purple-300 font-bold text-xs">{debtsTotal}₾</p>
-            <p className="text-purple-200/70 text-[10px] mb-1">ვალები</p>
+            <CreditCard className="h-3 w-3 text-purple-500 mx-auto mb-0.5" />
+            <p className="text-purple-700 dark:text-purple-300 font-bold text-xs">{debtsTotal}₾</p>
+            <p className="text-purple-500 text-[10px] mb-1">ვალები</p>
             <div className="text-[10px] flex justify-between">
-              <span className="text-purple-300 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{debtsPaid}₾</span>
+              <span className="text-purple-600 dark:text-purple-400 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{debtsPaid}₾</span>
               <span className="text-purple-400">{debtsRemaining}₾</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-blue-500/10">
+        <Card className="border-0 bg-blue-50 dark:bg-blue-900/20">
           <CardContent className="p-2">
-            <Receipt className="h-3 w-3 text-blue-400 mx-auto mb-0.5" />
-            <p className="text-blue-300 font-bold text-xs">{billsTotal}₾</p>
-            <p className="text-blue-200/70 text-[10px] mb-1">ბილები</p>
+            <Receipt className="h-3 w-3 text-blue-500 mx-auto mb-0.5" />
+            <p className="text-blue-700 dark:text-blue-300 font-bold text-xs">{billsTotal}₾</p>
+            <p className="text-blue-500 text-[10px] mb-1">ბილები</p>
             <div className="text-[10px] flex justify-between">
-              <span className="text-blue-300 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{billsPaid}₾</span>
+              <span className="text-blue-600 dark:text-blue-400 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{billsPaid}₾</span>
               <span className="text-blue-400">{billsRemaining}₾</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-teal-500/10">
+        <Card className="border-0 bg-teal-50 dark:bg-teal-900/20">
           <CardContent className="p-2">
-            <Repeat className="h-3 w-3 text-teal-400 mx-auto mb-0.5" />
-            <p className="text-teal-300 font-bold text-xs">{subsTotal}₾</p>
-            <p className="text-teal-200/70 text-[10px] mb-1">გამოწერები</p>
+            <Repeat className="h-3 w-3 text-teal-500 mx-auto mb-0.5" />
+            <p className="text-teal-700 dark:text-teal-300 font-bold text-xs">{subsTotal}₾</p>
+            <p className="text-teal-500 text-[10px] mb-1">გამოწერები</p>
             <div className="text-[10px] flex justify-between">
-              <span className="text-teal-300 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{subsPaid}₾</span>
+              <span className="text-teal-600 dark:text-teal-400 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{subsPaid}₾</span>
               <span className="text-teal-400">{subsRemaining}₾</span>
             </div>
           </CardContent>

@@ -120,7 +120,7 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
 
     if (loan.id === editingId) {
       return (
-        <Card key={loan.id} className="p-2 border-l-4 border-l-cyan-500 bg-cyan-500/10">
+        <Card key={loan.id} className="p-2 border-l-4 border-l-cyan-500 bg-cyan-50 dark:bg-cyan-500/10">
           <div className="space-y-1.5">
             <Input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-xs" placeholder="ვის" />
             <div className="flex gap-1.5">
@@ -143,21 +143,21 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
         className={cn(
           'p-2 border-l-4',
           loan.returned
-            ? 'border-l-green-500 bg-green-500/10 opacity-60'
+            ? 'border-l-green-500 bg-green-50 dark:bg-green-500/10 opacity-60'
             : daysUntil !== null && daysUntil < 0
-            ? 'border-l-red-500 bg-red-500/10'
-            : 'border-l-cyan-500 bg-cyan-500/10'
+            ? 'border-l-red-500 bg-red-50 dark:bg-red-500/10'
+            : 'border-l-cyan-500 bg-cyan-50 dark:bg-cyan-500/10'
         )}
       >
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <HandCoins className="h-3 w-3 text-cyan-400" />
-              <p className={cn('font-bold text-xs', loan.returned ? 'text-green-300 line-through' : 'text-cyan-200')}>
+              <HandCoins className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+              <p className={cn('font-bold text-xs', loan.returned ? 'text-green-700 dark:text-green-300 line-through' : 'text-cyan-700 dark:text-cyan-300')}>
                 {loan.borrowerName}
               </p>
             </div>
-            <p className="text-xs text-cyan-300 font-bold">{loan.amount}₾</p>
+            <p className="text-xs text-cyan-700 dark:text-cyan-300 font-bold">{loan.amount}₾</p>
 
             <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground">
               <span>გასესხდა: {formatDate(loan.loanDate)}</span>
@@ -165,13 +165,13 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
             </div>
 
             {loan.comment && (
-              <p className="text-[10px] text-slate-400 mt-0.5 italic">"{loan.comment}"</p>
+              <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 italic">"{loan.comment}"</p>
             )}
 
             {!loan.returned && daysUntil !== null && (
               <div className="flex items-center gap-1 mt-1">
                 {daysUntil < 0 ? (
-                  <AlertTriangle className="h-3 w-3 text-red-500" />
+                  <AlertTriangle className="h-3 w-3 text-red-500 dark:text-red-400" />
                 ) : (
                   <Clock className="h-3 w-3" style={{
                     color: daysUntil <= 3 ? '#f87171' : daysUntil <= 7 ? '#fbbf24' : '#10b981',
@@ -202,11 +202,11 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
               title={loan.returned ? 'დაბრუნებული' : 'დაბრუნებულად მონიშვნა'}
             />
             {!loan.returned && (
-              <Button variant="ghost" size="icon" onClick={() => startEdit(loan)} className="h-6 w-6 text-slate-400 hover:text-slate-200">
+              <Button variant="ghost" size="icon" onClick={() => startEdit(loan)} className="h-6 w-6 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
                 <Pencil className="h-3 w-3" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={() => handleRemove(loan.id, loan.borrowerName, loan.amount)} className="h-6 w-6 text-red-400 hover:text-red-300">
+            <Button variant="ghost" size="icon" onClick={() => handleRemove(loan.id, loan.borrowerName, loan.amount)} className="h-6 w-6 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
               <X className="h-3 w-3" />
             </Button>
           </div>
@@ -228,7 +228,7 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
           value={amount}
           onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
           onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
-          className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-3 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+          className="flex-1 h-8 rounded-2xl border border-border bg-background/50 px-3 py-1 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
         />
         <Input type="text" placeholder="კომენტარი" value={comment} onChange={(e) => setComment(e.target.value)} className="flex-1 h-8 text-xs" />
       </div>
@@ -248,19 +248,19 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
       </Button>
 
       {/* სტატისტიკა */}
-      <Card className="bg-cyan-500/10 border-cyan-700/50">
+      <Card className="bg-cyan-50 dark:bg-cyan-500/10 border-cyan-200 dark:border-cyan-700/50">
         <CardContent className="p-2">
           <div className="flex justify-between text-xs mb-1">
-            <span className="flex items-center gap-1 text-cyan-300"><HandCoins className="h-2.5 w-2.5" />გასესხებული:</span>
-            <span className="font-bold text-cyan-300">{totalActive}₾</span>
+            <span className="flex items-center gap-1 text-cyan-700 dark:text-cyan-300"><HandCoins className="h-2.5 w-2.5" />გასესხებული:</span>
+            <span className="font-bold text-cyan-700 dark:text-cyan-300">{totalActive}₾</span>
           </div>
           {totalReturned > 0 && (
             <div className="flex justify-between text-xs">
-              <span className="flex items-center gap-1 text-green-400"><Check className="h-2.5 w-2.5" />დაბრუნებული:</span>
-              <span className="font-bold text-green-400">{totalReturned}₾</span>
+              <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><Check className="h-2.5 w-2.5" />დაბრუნებული:</span>
+              <span className="font-bold text-green-600 dark:text-green-400">{totalReturned}₾</span>
             </div>
           )}
-          <div className="flex justify-between text-xs text-cyan-200 mt-1.5 pt-1.5 border-t border-cyan-700">
+          <div className="flex justify-between text-xs text-cyan-700 dark:text-cyan-300 mt-1.5 pt-1.5 border-t border-cyan-200 dark:border-cyan-700/50">
             <span>სულ:</span>
             <span className="font-bold">{totalActive + totalReturned}₾</span>
           </div>
@@ -270,9 +270,9 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
       {/* აქტიური სესხები */}
       <div className="space-y-1.5">
         {activeLoans.length === 0 && returnedLoans.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">არავის არაფერი გაქვს გასესხებული</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">არავის არაფერი გაქვს გასესხებული</p>
         ) : activeLoans.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">ყველა თანხა დაბრუნებულია!</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">ყველა თანხა დაბრუნებულია!</p>
         ) : (
           activeLoans.map((loan) => renderLoanCard(loan))
         )}
@@ -284,7 +284,7 @@ export const LoansManager: React.FC<LoansManagerProps> = ({
           <Button
             variant="ghost"
             onClick={() => setShowReturned(!showReturned)}
-            className="w-full flex justify-between items-center text-sm font-bold text-green-400 border-t border-slate-700 rounded-none pt-3"
+            className="w-full flex justify-between items-center text-sm font-bold text-green-600 dark:text-green-400 border-t border-slate-200 dark:border-slate-700 rounded-none pt-3"
           >
             <span className="flex items-center gap-1">
               <Check className="h-4 w-4" />

@@ -137,38 +137,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     return (
       <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" onClick={onClose}>
         <div
-          className="bg-slate-800 rounded-xl border border-slate-600 w-full max-w-sm p-6 space-y-4"
+          className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-6 space-y-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-              <Cloud className="w-5 h-5 text-green-400" />
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <Cloud className="w-5 h-5 text-green-600 dark:text-green-400" />
               ღრუბელი
             </h2>
-            <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded">
-              <X className="w-5 h-5 text-slate-400" />
+            <button onClick={onClose} className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">
+              <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
             </button>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
             {user.photoURL ? (
               <img src={user.photoURL} alt="" className="w-10 h-10 rounded-full" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-black font-bold">
+              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
                 {(user.displayName || user.email || user.phoneNumber || '?')[0].toUpperCase()}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-200 truncate">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                 {user.displayName || 'მომხმარებელი'}
               </p>
-              <p className="text-xs text-slate-400 truncate">
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                 {user.email || user.phoneNumber || ''}
               </p>
             </div>
           </div>
 
-          <p className="text-xs text-green-400 text-center">
+          <p className="text-xs text-green-600 dark:text-green-400 text-center">
             მონაცემები სინქრონიზებულია ღრუბელთან
           </p>
 
@@ -192,20 +192,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-slate-800 rounded-xl border border-slate-600 w-full max-w-sm p-6 space-y-4"
+        className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-6 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-            <CloudOff className="w-5 h-5 text-slate-400" />
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <CloudOff className="w-5 h-5 text-slate-500 dark:text-slate-400" />
             ავტორიზაცია
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded">
-            <X className="w-5 h-5 text-slate-400" />
+          <button onClick={onClose} className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">
+            <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           შედით რომ მონაცემები ღრუბელში შეინახოს და ყველა მოწყობილობაზე სინქრონიზდეს
         </p>
 
@@ -215,10 +215,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <button
               key={t.key}
               onClick={() => { setTab(t.key); setError(''); }}
-              className={`flex-1 text-xs py-2 px-1 rounded-md transition-colors ${
+              className={`flex-1 text-xs py-2 px-1 rounded-xl transition-colors ${
                 tab === t.key
-                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 border border-transparent'
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
               }`}
             >
               <span className="block text-sm">{t.icon}</span>
@@ -228,7 +228,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {error && (
-          <p className="text-xs text-red-400 bg-red-400/10 p-2 rounded">{error}</p>
+          <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-2 rounded-xl">{error}</p>
         )}
 
         {/* Google */}
@@ -255,7 +255,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+995 5XX XXX XXX"
-                  className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm outline-none focus:border-yellow-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
                 />
                 <Button className="w-full" onClick={handleSendSMS} disabled={loading || phone.length < 9}>
                   📱 {loading ? 'იგზავნება...' : 'კოდის გაგზავნა'}
@@ -263,21 +263,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </>
             ) : (
               <>
-                <p className="text-xs text-slate-400">SMS კოდი გამოგზავნილია {phone}-ზე</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">SMS კოდი გამოგზავნილია {phone}-ზე</p>
                 <input
                   type="text"
                   value={smsCode}
                   onChange={(e) => setSmsCode(e.target.value)}
                   placeholder="6-ნიშნა კოდი"
                   maxLength={6}
-                  className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm text-center tracking-widest outline-none focus:border-yellow-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm text-center tracking-widest outline-none focus:border-blue-500"
                 />
                 <Button className="w-full" onClick={handleConfirmSMS} disabled={loading || smsCode.length < 6}>
                   {loading ? 'მოწმდება...' : 'დადასტურება'}
                 </Button>
                 <button
                   onClick={() => { setConfirmResult(null); setSmsCode(''); }}
-                  className="text-xs text-slate-400 underline w-full text-center"
+                  className="text-xs text-slate-500 dark:text-slate-400 underline w-full text-center"
                 >
                   სხვა ნომრით ცდა
                 </button>
@@ -295,21 +295,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ელ-ფოსტა"
-              className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm outline-none focus:border-yellow-500"
+              className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
             />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="პაროლი (6+ სიმბოლო)"
-              className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm outline-none focus:border-yellow-500"
+              className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
             />
             <Button className="w-full" onClick={handleEmail} disabled={loading || !email || password.length < 6}>
               📧 {loading ? 'იტვირთება...' : isSignUp ? 'რეგისტრაცია' : 'შესვლა'}
             </Button>
             <button
               onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-              className="text-xs text-slate-400 underline w-full text-center"
+              className="text-xs text-slate-500 dark:text-slate-400 underline w-full text-center"
             >
               {isSignUp ? 'უკვე მაქვს ანგარიში — შესვლა' : 'არ მაქვს ანგარიში — რეგისტრაცია'}
             </button>

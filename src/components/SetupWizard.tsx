@@ -467,10 +467,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const needsDailyTarget = profile.incomeType === 'freelance' || profile.incomeType === 'both';
   const needsWorkDays = profile.incomeType === 'salary' || profile.incomeType === 'both';
 
-  const nativeInputClass = "flex h-10 w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors";
+  const nativeInputClass = "flex h-10 w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
 
         {/* Step 0: მისასალმებელი + ავტორიზაცია */}
@@ -478,7 +478,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
           <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
             <CardContent className="pt-8 pb-8 text-center space-y-6">
               <div className="text-6xl mb-4">🏺</div>
-              <CardTitle className="text-3xl font-black text-amber-400">ჩემი ფინანსები</CardTitle>
+              <CardTitle className="text-3xl font-black text-blue-600">ჩემი ფინანსები</CardTitle>
               <CardDescription className="text-base">
                 მართე შენი ყოველდღიური ფინანსები, დააგროვე კულაბაში და მიაღწიე შენს მიზანს
               </CardDescription>
@@ -488,8 +488,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                 <div className="pt-2">
                   {user ? (
                     // შესულია
-                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 space-y-2">
-                      <div className="flex items-center justify-center gap-2 text-emerald-400">
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400">
                         <Cloud className="w-5 h-5" />
                         <span className="font-bold text-sm">ღრუბელთან დაკავშირებულია</span>
                       </div>
@@ -501,19 +501,19 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                             {(user.displayName || user.email || '?')[0].toUpperCase()}
                           </div>
                         )}
-                        <span className="text-sm text-slate-300">{user.displayName || user.email || user.phoneNumber}</span>
+                        <span className="text-sm text-slate-700 dark:text-slate-300">{user.displayName || user.email || user.phoneNumber}</span>
                       </div>
-                      <p className="text-xs text-emerald-400/60">შენი მონაცემები ავტომატურად შეინახება ღრუბელში</p>
+                      <p className="text-xs text-emerald-500 dark:text-emerald-400">შენი მონაცემები ავტომატურად შეინახება ღრუბელში</p>
                     </div>
                   ) : (
                     // არ არის შესული — რეგისტრაციის შეთავაზება
-                    <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-center gap-2 text-slate-400">
+                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
                         <CloudOff className="w-5 h-5" />
                         <span className="font-bold text-sm">ღრუბლის სინქრონიზაცია</span>
                       </div>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        თუ გაივლი რეგისტრაციას, შენი მონაცემები შეინახება ღრუბელში და <strong className="text-slate-200">ყველა მოწყობილობაზე</strong> (ტელეფონი, ლეპტოპი, ტაბლეტი) სინქრონიზდება ავტომატურად.
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        თუ გაივლი რეგისტრაციას, შენი მონაცემები შეინახება ღრუბელში და <strong className="text-slate-800 dark:text-slate-200">ყველა მოწყობილობაზე</strong> (ტელეფონი, ლეპტოპი, ტაბლეტი) სინქრონიზდება ავტომატურად.
                       </p>
 
                       {/* Auth tabs */}
@@ -527,10 +527,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                             key={t.key}
                             onClick={() => { setAuthTab(t.key); setAuthError(''); }}
                             className={cn(
-                              'flex-1 text-xs py-1.5 rounded-md transition-colors',
+                              'flex-1 text-xs py-1.5 rounded-xl transition-colors',
                               authTab === t.key
-                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                : 'bg-slate-700/30 text-slate-500 hover:text-slate-400 border border-transparent'
+                                ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent'
                             )}
                           >
                             <span className="text-sm">{t.icon}</span> {t.label}
@@ -539,7 +539,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       </div>
 
                       {authError && (
-                        <p className="text-xs text-red-400 bg-red-400/10 p-2 rounded">{authError}</p>
+                        <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-2 rounded-xl">{authError}</p>
                       )}
 
                       {/* Google */}
@@ -565,12 +565,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                           <input
                             type="email" placeholder="ელ-ფოსტა" value={authEmail}
                             onChange={(e) => setAuthEmail(e.target.value)}
-                            className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm outline-none focus:border-yellow-500"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
                           />
                           <input
                             type="password" placeholder="პაროლი (6+ სიმბოლო)" value={authPassword}
                             onChange={(e) => setAuthPassword(e.target.value)}
-                            className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm outline-none focus:border-yellow-500"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
                           />
                           <Button
                             className="w-full" disabled={authBusy || !authEmail || authPassword.length < 6}
@@ -593,7 +593,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                           </Button>
                           <button
                             onClick={() => { setAuthIsSignUp(!authIsSignUp); setAuthError(''); }}
-                            className="text-xs text-slate-500 underline w-full text-center"
+                            className="text-xs text-slate-500 dark:text-slate-400 underline w-full text-center"
                           >
                             {authIsSignUp ? 'უკვე მაქვს ანგარიში' : 'არ მაქვს ანგარიში — რეგისტრაცია'}
                           </button>
@@ -608,7 +608,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                               <input
                                 type="tel" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)}
                                 placeholder="+995 5XX XXX XXX"
-                                className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm outline-none focus:border-yellow-500"
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
                               />
                               <Button
                                 className="w-full" disabled={authBusy || authPhone.length < 9}
@@ -630,11 +630,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                             </>
                           ) : (
                             <>
-                              <p className="text-xs text-slate-400">SMS კოდი გამოგზავნილია</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">SMS კოდი გამოგზავნილია</p>
                               <input
                                 type="text" value={authSmsCode} onChange={(e) => setAuthSmsCode(e.target.value)}
                                 placeholder="6-ნიშნა კოდი" maxLength={6}
-                                className="w-full px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm text-center tracking-widest outline-none focus:border-yellow-500"
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm text-center tracking-widest outline-none focus:border-blue-500"
                               />
                               <Button
                                 className="w-full" disabled={authBusy || authSmsCode.length < 6}
@@ -668,7 +668,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   </p>
                 )}
                 <div>
-                  <Button variant="ghost" onClick={handleSkipSetup} className="text-sm text-muted-foreground hover:text-slate-200">
+                  <Button variant="ghost" onClick={handleSkipSetup} className="text-sm text-muted-foreground hover:text-slate-800 dark:hover:text-slate-200">
                     გამოტოვება — ხელით შევავსებ
                   </Button>
                 </div>
@@ -818,7 +818,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                         key={wd.value}
                         onClick={() => toggleWorkDay(wd.value)}
                         className={cn(
-                          'flex-1 py-2.5 rounded-lg text-xs font-bold border transition-all',
+                          'flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all',
                           (profile.workDays || []).includes(wd.value)
                             ? 'border-primary bg-primary/20 text-primary'
                             : 'border-border bg-background/30 text-muted-foreground hover:border-border/80'
@@ -830,7 +830,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   </div>
                   {profile.salary > 0 && (
                     <p className="text-xs text-muted-foreground/70 mt-2">
-                      {workDaysInMonth} სამუშაო დღე ამ თვეში · დღიურად: <span className="text-emerald-400 font-bold">{dailySalary}{'\u20BE'}</span>
+                      {workDaysInMonth} სამუშაო დღე ამ თვეში · დღიურად: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{dailySalary}{'\u20BE'}</span>
                     </p>
                   )}
                 </div>
@@ -868,7 +868,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                 {profile.additionalIncomes.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {profile.additionalIncomes.map((ai) => (
-                      <div key={ai.id} className="flex justify-between items-center p-2.5 rounded-lg border border-border bg-card">
+                      <div key={ai.id} className="flex justify-between items-center p-2.5 rounded-xl border border-border bg-card">
                         <div>
                           <span className="text-sm font-bold">{ai.name}</span>
                           <Badge variant="success" className="ml-2">{ai.amount}{'\u20BE'}</Badge>
@@ -892,12 +892,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                     placeholder={'\u20BE'}
                     value={newAiAmount}
                     onChange={(e) => setNewAiAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-20 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    className="w-20 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                   />
                   <select
                     value={newAiFrequency}
                     onChange={(e) => setNewAiFrequency(e.target.value as 'monthly' | 'weekly' | 'daily')}
-                    className="bg-background/50 px-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-ring transition-colors"
+                    className="bg-background/50 px-2 rounded-xl border border-border text-sm outline-none focus:ring-2 focus:ring-ring transition-colors"
                   >
                     <option value="monthly">თვე</option>
                     <option value="weekly">კვირა</option>
@@ -942,7 +942,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                     const cat = BILL_CATEGORIES.find((c) => name.startsWith(c.label) || name.startsWith('კომუნალური'));
                     const color = cat?.color || '#64748b';
                     return (
-                      <div key={name} className="flex justify-between items-center p-2.5 rounded-lg border" style={{ borderColor: `${color}40`, backgroundColor: `${color}08` }}>
+                      <div key={name} className="flex justify-between items-center p-2.5 rounded-xl border" style={{ borderColor: `${color}40`, backgroundColor: `${color}08` }}>
                         <div className="flex items-center gap-2">
                           <span className="text-sm">{cat?.icon || '📝'}</span>
                           <div>
@@ -973,7 +973,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       type="button"
                       onClick={() => selectBillCategory(cat.key)}
                       className={cn(
-                        'flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-center',
+                        'flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all text-center',
                         selectedBillCategory === cat.key
                           ? 'scale-105'
                           : 'border-border/50 hover:border-border opacity-70 hover:opacity-100'
@@ -1058,7 +1058,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       onChange={(e) => setNewBillAmount(e.target.value.replace(/[^0-9]/g, ''))}
                       onKeyDown={(e) => { if (e.key === 'Enter') addBill(); }}
                       autoFocus
-                      className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                     />
                     <input
                       type="text"
@@ -1066,7 +1066,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       placeholder="გადახდის დღე"
                       value={newBillDueDay}
                       onChange={(e) => setNewBillDueDay(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-36 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                      className="w-36 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                     />
                   </div>
                   <Button
@@ -1115,15 +1115,15 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                     const typeInfo = BANK_PRODUCT_TYPES.find((t) => t.key === item.type);
                     const months = bankMonthsBetween(item.startDate, item.endDate);
                     return (
-                      <div key={idx} className="flex justify-between items-center p-2.5 rounded-lg border" style={{ borderColor: `${typeInfo?.color}40`, backgroundColor: `${typeInfo?.color}08` }}>
+                      <div key={idx} className="flex justify-between items-center p-2.5 rounded-xl border" style={{ borderColor: `${typeInfo?.color}40`, backgroundColor: `${typeInfo?.color}08` }}>
                         <div className="flex items-center gap-2">
                           <span className="text-sm">{typeInfo?.icon}</span>
                           <div>
                             <span className="font-bold text-sm" style={{ color: typeInfo?.color }}>{typeInfo?.label}</span>
                             {item.name && <span className="text-[10px] text-muted-foreground ml-1">· {item.name}</span>}
                             <div className="text-[10px] text-muted-foreground">
-                              ძირი: <span className="text-red-400 font-bold">{item.principal}₾</span>
-                              {' · '}%/თვე: <span className="text-orange-400 font-bold">{item.monthlyInterest}₾</span>
+                              ძირი: <span className="text-red-600 dark:text-red-400 font-bold">{item.principal}₾</span>
+                              {' · '}%/თვე: <span className="text-orange-600 dark:text-orange-400 font-bold">{item.monthlyInterest}₾</span>
                               {' · '}{months} თვე
                             </div>
                           </div>
@@ -1147,7 +1147,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       type="button"
                       onClick={() => setBankType(bankType === type.key ? null : type.key)}
                       className={cn(
-                        'flex items-center gap-1.5 p-2.5 rounded-lg border-2 transition-all text-left',
+                        'flex items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-left',
                         bankType === type.key ? 'scale-[1.02]' : 'border-border/50 opacity-60 hover:opacity-100'
                       )}
                       style={{
@@ -1169,16 +1169,16 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   <div className="flex gap-2">
                     <input type="text" inputMode="numeric" placeholder="ძირი თანხა ₾ *" value={bankPrincipal}
                       onChange={(e) => setBankPrincipal(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                     />
                     <input type="text" inputMode="numeric" placeholder="% თვეში ₾ *" value={bankInterest}
                       onChange={(e) => setBankInterest(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                     />
                   </div>
                   <input type="text" inputMode="numeric" placeholder="გადახდის დღე (1-31) *" value={bankPayDay}
                     onChange={(e) => setBankPayDay(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-full h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    className="w-full h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                   />
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -1192,7 +1192,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   </div>
                   {bankStart && bankEnd && bankStart <= bankEnd && (
                     <p className="text-[10px] text-muted-foreground text-center">
-                      ვადა: <span className="font-bold text-slate-200">{bankMonthsBetween(bankStart, bankEnd)} თვე</span>
+                      ვადა: <span className="font-bold text-slate-800 dark:text-slate-200">{bankMonthsBetween(bankStart, bankEnd)} თვე</span>
                     </p>
                   )}
                   <Button onClick={addBankItem} className="w-full h-9" variant="default">
@@ -1201,7 +1201,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                 </div>
               )}
 
-              <div className="bg-blue-500/10 border border-blue-700/30 rounded-md p-2.5 text-[11px] text-blue-300 space-y-0.5">
+              <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-700/50 rounded-xl p-2.5 text-[11px] text-blue-600 dark:text-blue-400 space-y-0.5">
                 <p>📌 ძირი თანხა ავტომატურად დაემატება <strong>ვალებში</strong> (კუბიკებით)</p>
                 <p>📌 ყოველთვიური პროცენტი დაემატება <strong>ყოველთვიურ გადასახადებში</strong></p>
               </div>
@@ -1234,16 +1234,16 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
               {lombardItems.length > 0 && (
                 <div className="space-y-1.5">
                   {lombardItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-2.5 rounded-lg border border-amber-500/40 bg-amber-500/8">
+                    <div key={idx} className="flex justify-between items-center p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/8">
                       <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-amber-400" />
+                        <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         <div>
-                          <span className="font-bold text-sm text-amber-200">{item.itemName}</span>
-                          {item.contractNumber && <span className="text-[10px] text-amber-400/70 ml-1.5">#{item.contractNumber}</span>}
+                          <span className="font-bold text-sm text-amber-700 dark:text-amber-300">{item.itemName}</span>
+                          {item.contractNumber && <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-1.5">#{item.contractNumber}</span>}
                           <div className="text-[10px] text-muted-foreground">
-                            ძირი: <span className="text-red-400 font-bold">{item.principal}₾</span>
-                            {' · '}%/თვე: <span className="text-orange-400 font-bold">{item.monthlyInterest}₾</span>
-                            {' · '}გადახდა: <span className="text-blue-400">{item.paymentDay} რიცხვი</span>
+                            ძირი: <span className="text-red-600 dark:text-red-400 font-bold">{item.principal}₾</span>
+                            {' · '}%/თვე: <span className="text-orange-600 dark:text-orange-400 font-bold">{item.monthlyInterest}₾</span>
+                            {' · '}გადახდა: <span className="text-blue-600 dark:text-blue-400">{item.paymentDay} რიცხვი</span>
                           </div>
                         </div>
                       </div>
@@ -1259,18 +1259,18 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                 <div className="flex gap-2">
                   <input type="text" inputMode="numeric" placeholder="ძირი თანხა ₾ *" value={lombPrincipal}
                     onChange={(e) => setLombPrincipal(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                   />
                   <input type="text" inputMode="numeric" placeholder="% თვეში ₾ *" value={lombInterest}
                     onChange={(e) => setLombInterest(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                   />
                 </div>
                 <div className="flex gap-2">
                   <input type="text" inputMode="numeric" placeholder="გადახდის დღე (1-31) *" value={lombPayDay}
                     onChange={(e) => setLombPayDay(e.target.value.replace(/[^0-9]/g, ''))}
                     onKeyDown={(e) => { if (e.key === 'Enter') addLombardItem(); }}
-                    className="flex-1 h-10 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                   />
                   <Input type="text" placeholder="ხელშეკრულება # (არასავალდ.)" value={lombContract} onChange={(e) => setLombContract(e.target.value)} className="flex-1 h-9 text-sm" />
                 </div>
@@ -1278,7 +1278,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   <Plus className="w-4 h-4 mr-1.5" /> ლობარდის დამატება
                 </Button>
               </div>
-              <div className="bg-amber-500/10 border border-amber-700/30 rounded-md p-2.5 text-[11px] text-amber-300 space-y-0.5">
+              <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-700/50 rounded-xl p-2.5 text-[11px] text-amber-700 dark:text-amber-300 space-y-0.5">
                 <p>📌 ძირი თანხა ავტომატურად დაემატება <strong>ვალებში</strong></p>
                 <p>📌 ყოველთვიური პროცენტი დაემატება <strong>ყოველთვიურ გადასახადებში</strong> (12 თვე)</p>
               </div>
@@ -1351,7 +1351,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       {profile.additionalIncomes.map((ai) => (
                         <div key={ai.id} className="flex justify-between text-sm mt-1">
                           <span>{ai.name}</span>
-                          <span className="text-emerald-400">
+                          <span className="text-emerald-600 dark:text-emerald-400">
                             +{ai.amount}{'\u20BE'}/{ai.frequency === 'monthly' ? 'თვე' : ai.frequency === 'weekly' ? 'კვირა' : 'დღე'}
                           </span>
                         </div>
@@ -1362,7 +1362,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   <div className="border-t border-border pt-2">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">თვიური შემოსავალი:</span>
-                      <span className="font-bold text-emerald-400">{monthlyIncome}{'\u20BE'}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{monthlyIncome}{'\u20BE'}</span>
                     </div>
                   </div>
 
@@ -1372,7 +1372,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       {Object.entries(uniqueBills).map(([name, amount]) => (
                         <div key={name} className="flex justify-between text-sm mt-1">
                           <span>{name}</span>
-                          <span className="text-red-400">-{amount}{'\u20BE'}/თვე</span>
+                          <span className="text-red-600 dark:text-red-400">-{amount}{'\u20BE'}/თვე</span>
                         </div>
                       ))}
                       <div className="flex justify-between text-sm mt-1 pt-1 border-t border-border/50">
@@ -1393,9 +1393,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                           <div key={idx} className="flex justify-between text-sm mt-1">
                             <span style={{ color: typeInfo?.color }}>{typeInfo?.icon} {typeInfo?.label}{item.name ? `: ${item.name}` : ''}</span>
                             <span className="text-xs">
-                              <span className="text-red-400">{item.principal}₾</span>
+                              <span className="text-red-600 dark:text-red-400">{item.principal}₾</span>
                               <span className="text-muted-foreground mx-1">+</span>
-                              <span className="text-orange-400">{item.monthlyInterest}₾/თვე</span>
+                              <span className="text-orange-600 dark:text-orange-400">{item.monthlyInterest}₾/თვე</span>
                             </span>
                           </div>
                         );
@@ -1410,11 +1410,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                       </span>
                       {lombardItems.map((item, idx) => (
                         <div key={idx} className="flex justify-between text-sm mt-1">
-                          <span className="text-amber-200">🏪 {item.itemName}</span>
+                          <span className="text-amber-700 dark:text-amber-300">🏪 {item.itemName}</span>
                           <span className="text-xs">
-                            <span className="text-red-400">{item.principal}₾</span>
+                            <span className="text-red-600 dark:text-red-400">{item.principal}₾</span>
                             <span className="text-muted-foreground mx-1">+</span>
-                            <span className="text-orange-400">{item.monthlyInterest}₾/თვე</span>
+                            <span className="text-orange-600 dark:text-orange-400">{item.monthlyInterest}₾/თვე</span>
                           </span>
                         </div>
                       ))}
@@ -1427,9 +1427,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <Card className="border-2 border-emerald-500/50 bg-emerald-500/10">
                   <CardContent className="pt-4 pb-4 text-center">
-                    <p className="text-emerald-300/80 text-xs mb-1">დღიური გეგმა</p>
-                    <p className="text-3xl font-black text-emerald-400">{dailyTarget}{'\u20BE'}</p>
-                    <p className="text-emerald-300/50 text-[10px] mt-1">
+                    <p className="text-emerald-600 dark:text-emerald-400 text-xs mb-1">დღიური გეგმა</p>
+                    <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{dailyTarget}{'\u20BE'}</p>
+                    <p className="text-emerald-500 dark:text-emerald-400 text-[10px] mt-1">
                       {profile.incomeType === 'both'
                         ? `${dailySalary}₾ ხელფასი + ${profile.dailyTarget}₾ დანამატი`
                         : 'სამუშაო დღეზე'

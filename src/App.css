@@ -4,14 +4,37 @@
 
 @layer base {
   :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
     --background: 222 47% 6%;
     --foreground: 213 31% 91%;
     --card: 222 47% 9%;
     --card-foreground: 213 31% 91%;
     --popover: 222 47% 9%;
     --popover-foreground: 213 31% 91%;
-    --primary: 38 92% 50%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 213 31% 91%;
     --muted: 217 33% 17%;
@@ -22,8 +45,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 217 33% 18%;
     --input: 217 33% 18%;
-    --ring: 38 92% 50%;
-    --radius: 0.625rem;
+    --ring: 217 91% 55%;
   }
 }
 
@@ -43,77 +65,143 @@
 
 /* Day Card Styles */
 .day-card {
-  @apply transition-all border border-border rounded-md flex flex-col items-center justify-center cursor-pointer;
+  @apply transition-all border border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer shadow-sm;
   height: 68px;
   background: hsl(var(--card));
 }
 
 .day-card:hover {
-  @apply border-primary shadow-lg;
+  @apply border-blue-400 shadow-xl;
   transform: scale(1.05);
-  box-shadow: 0 0 16px hsla(var(--primary), 0.2);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
 }
 
-/* Day Status Colors */
+/* Day Status Colors — light theme */
 .status-perfect {
-  background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(160 84% 30%) 100%);
-  border-color: hsl(160 84% 39%);
+  background: linear-gradient(135deg, hsl(160 84% 92%) 0%, hsl(160 84% 85%) 100%);
+  border-color: hsl(160 60% 60%);
+  color: hsl(160 84% 25%);
 }
 
 .status-critical {
-  background: linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(0 84% 50%) 100%);
-  border-color: hsl(0 84% 60%);
+  background: linear-gradient(135deg, hsl(0 84% 95%) 0%, hsl(0 84% 88%) 100%);
+  border-color: hsl(0 60% 65%);
+  color: hsl(0 84% 35%);
 }
 
 .status-yellow {
-  background: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(38 92% 42%) 100%);
-  border-color: hsl(38 92% 50%);
+  background: linear-gradient(135deg, hsl(38 92% 92%) 0%, hsl(38 92% 85%) 100%);
+  border-color: hsl(38 60% 55%);
+  color: hsl(38 92% 30%);
 }
 
-/* Split statuses: ხარჯი (მარცხნივ) | შემოსავალი (მარჯვნივ) */
+/* Day Status Colors — dark theme */
+.dark .status-perfect {
+  background: linear-gradient(135deg, hsl(160 84% 15%) 0%, hsl(160 84% 20%) 100%);
+  border-color: hsl(160 60% 40%);
+  color: hsl(160 84% 75%);
+}
+
+.dark .status-critical {
+  background: linear-gradient(135deg, hsl(0 84% 18%) 0%, hsl(0 84% 22%) 100%);
+  border-color: hsl(0 60% 45%);
+  color: hsl(0 84% 75%);
+}
+
+.dark .status-yellow {
+  background: linear-gradient(135deg, hsl(38 92% 15%) 0%, hsl(38 92% 20%) 100%);
+  border-color: hsl(38 60% 40%);
+  color: hsl(38 92% 75%);
+}
+
+/* Split statuses */
 .status-green-green {
-  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(142 71% 45%) 50%);
-  border-color: hsl(160 84% 39%);
+  background: linear-gradient(to right, hsl(160 84% 90%) 50%, hsl(142 71% 88%) 50%);
+  border-color: hsl(160 60% 60%);
 }
 
 .status-green-yellow {
-  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(38 92% 50%) 50%);
-  border-color: hsl(160 84% 39%);
+  background: linear-gradient(to right, hsl(160 84% 90%) 50%, hsl(38 92% 90%) 50%);
+  border-color: hsl(160 60% 60%);
 }
 
 .status-green-red {
-  background: linear-gradient(to right, hsl(160 84% 39%) 50%, hsl(0 84% 60%) 50%);
-  border-color: hsl(160 84% 39%);
+  background: linear-gradient(to right, hsl(160 84% 90%) 50%, hsl(0 84% 93%) 50%);
+  border-color: hsl(160 60% 60%);
 }
 
 .status-yellow-green {
-  background: linear-gradient(to right, hsl(38 92% 50%) 50%, hsl(160 84% 39%) 50%);
-  border-color: hsl(38 92% 50%);
+  background: linear-gradient(to right, hsl(38 92% 90%) 50%, hsl(160 84% 90%) 50%);
+  border-color: hsl(38 60% 55%);
 }
 
 .status-yellow-yellow {
-  background: linear-gradient(to right, hsl(38 92% 45%) 50%, hsl(38 92% 55%) 50%);
-  border-color: hsl(38 92% 50%);
+  background: linear-gradient(to right, hsl(38 92% 88%) 50%, hsl(38 92% 92%) 50%);
+  border-color: hsl(38 60% 55%);
 }
 
 .status-yellow-red {
-  background: linear-gradient(to right, hsl(38 92% 50%) 50%, hsl(0 84% 60%) 50%);
-  border-color: hsl(38 92% 50%);
+  background: linear-gradient(to right, hsl(38 92% 90%) 50%, hsl(0 84% 93%) 50%);
+  border-color: hsl(38 60% 55%);
 }
 
 .status-red-green {
-  background: linear-gradient(to right, hsl(0 84% 60%) 50%, hsl(160 84% 39%) 50%);
-  border-color: hsl(0 84% 60%);
+  background: linear-gradient(to right, hsl(0 84% 93%) 50%, hsl(160 84% 90%) 50%);
+  border-color: hsl(0 60% 65%);
 }
 
 .status-red-yellow {
-  background: linear-gradient(to right, hsl(0 84% 60%) 50%, hsl(38 92% 50%) 50%);
-  border-color: hsl(0 84% 60%);
+  background: linear-gradient(to right, hsl(0 84% 93%) 50%, hsl(38 92% 90%) 50%);
+  border-color: hsl(0 60% 65%);
 }
 
 .status-red-red {
-  background: linear-gradient(to right, hsl(0 84% 55%) 50%, hsl(0 84% 65%) 50%);
-  border-color: hsl(0 84% 60%);
+  background: linear-gradient(to right, hsl(0 84% 92%) 50%, hsl(0 84% 95%) 50%);
+  border-color: hsl(0 60% 65%);
+}
+
+/* Split statuses — dark theme */
+.dark .status-green-green {
+  background: linear-gradient(to right, hsl(160 84% 18%) 50%, hsl(142 71% 20%) 50%);
+  border-color: hsl(160 60% 40%);
+}
+.dark .status-green-yellow {
+  background: linear-gradient(to right, hsl(160 84% 18%) 50%, hsl(38 92% 18%) 50%);
+  border-color: hsl(160 60% 40%);
+}
+.dark .status-green-red {
+  background: linear-gradient(to right, hsl(160 84% 18%) 50%, hsl(0 84% 20%) 50%);
+  border-color: hsl(160 60% 40%);
+}
+.dark .status-yellow-green {
+  background: linear-gradient(to right, hsl(38 92% 18%) 50%, hsl(160 84% 18%) 50%);
+  border-color: hsl(38 60% 40%);
+}
+.dark .status-yellow-yellow {
+  background: linear-gradient(to right, hsl(38 92% 16%) 50%, hsl(38 92% 20%) 50%);
+  border-color: hsl(38 60% 40%);
+}
+.dark .status-yellow-red {
+  background: linear-gradient(to right, hsl(38 92% 18%) 50%, hsl(0 84% 20%) 50%);
+  border-color: hsl(38 60% 40%);
+}
+.dark .status-red-green {
+  background: linear-gradient(to right, hsl(0 84% 20%) 50%, hsl(160 84% 18%) 50%);
+  border-color: hsl(0 60% 45%);
+}
+.dark .status-red-yellow {
+  background: linear-gradient(to right, hsl(0 84% 20%) 50%, hsl(38 92% 18%) 50%);
+  border-color: hsl(0 60% 45%);
+}
+.dark .status-red-red {
+  background: linear-gradient(to right, hsl(0 84% 18%) 50%, hsl(0 84% 22%) 50%);
+  border-color: hsl(0 60% 45%);
+}
+
+/* Day card dark hover */
+.dark .day-card:hover {
+  border-color: hsl(217 91% 55%);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
 }
 
 /* Scrollbar */
@@ -127,12 +215,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: hsl(214 32% 85%);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(215 16% 67%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(217 33% 25%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(217 33% 35%);
 }
 
 /* Animations */

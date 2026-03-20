@@ -117,7 +117,7 @@ export const ToolsMenu: React.FC<ToolsMenuProps> = ({ state, onImport, onReset, 
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600 text-black font-black flex items-center justify-center transition-shadow shadow-lg select-none touch-none"
+        className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white font-black flex items-center justify-center transition-shadow shadow-lg select-none touch-none"
         style={{
           position: 'fixed',
           left: pos.x,
@@ -132,7 +132,7 @@ export const ToolsMenu: React.FC<ToolsMenuProps> = ({ state, onImport, onReset, 
       {isOpen && (
         <div
           style={menuStyle}
-          className="flex flex-col gap-2 bg-slate-900/95 p-3 rounded-lg border-2 border-slate-700 shadow-2xl"
+          className="flex flex-col gap-2 bg-white/95 dark:bg-slate-900/95 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-2xl"
         >
           <Button
             variant="success"

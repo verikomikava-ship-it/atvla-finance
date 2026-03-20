@@ -138,14 +138,14 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
       <Input type="text" inputMode="numeric" placeholder="თანხა ₾" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={handleKeyDown} className="h-8 text-xs" />
 
       <div className="relative">
-        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-600 dark:text-slate-400 pointer-events-none" />
         <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="pl-8 h-8 text-xs" />
       </div>
 
-      <label className="flex items-center gap-2 p-1.5 hover:bg-slate-800 rounded cursor-pointer">
+      <label className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer">
         <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="w-3.5 h-3.5" />
-        <Repeat className="h-3 w-3 text-slate-400" />
-        <span className="text-xs text-slate-300">ყველა თვეში (რეკურინგი)</span>
+        <Repeat className="h-3 w-3 text-slate-600 dark:text-slate-400" />
+        <span className="text-xs text-slate-700 dark:text-slate-300">ყველა თვეში (რეკურინგი)</span>
       </label>
 
       <Button onClick={handleAdd} className="w-full h-7 text-[11px]" variant="default">
@@ -153,48 +153,48 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
       </Button>
 
       {/* სტატისტიკა */}
-      <Card className="bg-blue-500/10 border-blue-700/50">
+      <Card className="bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-700/50">
         <CardContent className="p-2 space-y-1">
           <div className="flex justify-between text-xs">
-            <span className="flex items-center gap-1 text-blue-300"><Check className="h-2.5 w-2.5" />გადახდილი:</span>
-            <span className="font-bold text-blue-300">{billsPaid}₾</span>
+            <span className="flex items-center gap-1 text-blue-700 dark:text-blue-300"><Check className="h-2.5 w-2.5" />გადახდილი:</span>
+            <span className="font-bold text-blue-700 dark:text-blue-300">{billsPaid}₾</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-blue-400">დარჩენილი:</span>
-            <span className="font-bold text-blue-400">{billsRemaining}₾</span>
+            <span className="text-blue-600 dark:text-blue-400">დარჩენილი:</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400">{billsRemaining}₾</span>
           </div>
           {utilityTotal > 0 && (
             <div className="flex justify-between text-xs">
-              <span className="flex items-center gap-1 text-teal-300"><Zap className="h-2.5 w-2.5" />კომუნალური:</span>
-              <span className="font-bold text-teal-300">{utilityTotal}₾</span>
+              <span className="flex items-center gap-1 text-teal-700 dark:text-teal-300"><Zap className="h-2.5 w-2.5" />კომუნალური:</span>
+              <span className="font-bold text-teal-700 dark:text-teal-300">{utilityTotal}₾</span>
             </div>
           )}
-          <div className="flex justify-between text-xs text-blue-200 pt-1.5 border-t border-blue-700">
+          <div className="flex justify-between text-xs text-blue-800 dark:text-blue-200 pt-1.5 border-t border-blue-200 dark:border-blue-700/50">
             <span>სულ:</span>
             <span className="font-bold">{grandTotal}₾</span>
           </div>
-          {grandTotal > 0 && <Progress value={(billsPaid / grandTotal) * 100} indicatorClassName="bg-blue-400" className="h-1 bg-blue-900/50" />}
+          {grandTotal > 0 && <Progress value={(billsPaid / grandTotal) * 100} indicatorClassName="bg-blue-500" className="h-1 bg-blue-100 dark:bg-blue-900/30" />}
         </CardContent>
       </Card>
 
       {/* კომუნალური — ავტომატური აგრეგაცია */}
       {utilityPayments.length > 0 && (
-        <Card className="bg-teal-500/10 border-teal-700/50 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-teal-900/30 border-b border-teal-700/30">
+        <Card className="bg-teal-50 dark:bg-teal-500/10 border-teal-200 dark:border-teal-700/50 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-teal-100 dark:bg-teal-900/30 border-b border-teal-200 dark:border-teal-700/50">
             <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-teal-400" />
-              <span className="text-xs font-bold text-teal-300">კომუნალური</span>
+              <Zap className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+              <span className="text-xs font-bold text-teal-700 dark:text-teal-300">კომუნალური</span>
             </div>
-            <span className="text-sm font-black text-teal-300">{utilityTotal}₾</span>
+            <span className="text-sm font-black text-teal-700 dark:text-teal-300">{utilityTotal}₾</span>
           </div>
           <CardContent className="p-2 space-y-1">
             {Object.entries(utilityByType).map(([type, data]) => (
-              <div key={type} className="flex items-center justify-between px-2 py-1 rounded-md" style={{ backgroundColor: `${data.color}10` }}>
+              <div key={type} className="flex items-center justify-between px-2 py-1 rounded-xl" style={{ backgroundColor: `${data.color}10` }}>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">{data.icon}</span>
                   <span className="text-xs font-bold" style={{ color: data.color }}>{type}</span>
                   {data.payments.length > 1 && (
-                    <span className="text-[9px] text-slate-500">({data.payments.length}x)</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400">({data.payments.length}x)</span>
                   )}
                 </div>
                 <span className="text-xs font-black" style={{ color: data.color }}>{data.total}₾</span>
@@ -207,7 +207,7 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
       {/* ბილების სია */}
       <div className="space-y-2">
         {monthlyBills.length === 0 && utilityPayments.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">ამ თვეში ბილი არ დამატებულა</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">ამ თვეში ბილი არ დამატებულა</p>
         ) : monthlyBills.length === 0 ? null : (
           monthlyBills.map((bill) => {
             const daysUntilDue = bill.dueDate ? getDaysUntilDue(bill.dueDate) : null;
@@ -215,7 +215,7 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
 
             if (bill.id === editingId) {
               return (
-                <Card key={bill.id} style={{ borderLeftColor: bgColor, borderLeftWidth: '4px' }} className="bg-blue-500/10 border-blue-700/50">
+                <Card key={bill.id} style={{ borderLeftColor: bgColor, borderLeftWidth: '4px' }} className="bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-700/50">
                   <CardContent className="p-2 space-y-1.5">
                     <Input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 text-xs" placeholder="სახელი" />
                     <div className="flex gap-1.5">
@@ -233,14 +233,14 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
               <Card
                 key={bill.id}
                 style={{ borderLeftColor: bgColor, borderLeftWidth: '4px' }}
-                className="bg-blue-500/10 border-blue-700/50"
+                className="bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-700/50"
               >
                 <CardContent className="p-2 flex justify-between items-center">
                   <label className="flex items-center cursor-pointer flex-1">
                     <input type="checkbox" checked={bill.paid} onChange={() => onToggleBillPaid(bill.id)} className="w-3.5 h-3.5 mr-2 cursor-pointer" />
                     <div className={cn(bill.paid && 'line-through opacity-50')}>
-                      <p className="font-bold text-xs text-blue-300">{bill.name}</p>
-                      <p className="text-[10px] text-blue-200">{bill.amount}₾</p>
+                      <p className="font-bold text-xs text-blue-700 dark:text-blue-300">{bill.name}</p>
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400">{bill.amount}₾</p>
                       {daysUntilDue !== null && !bill.paid && (
                         <p className="text-xs font-bold" style={{ color: bgColor }}>
                           {daysUntilDue < 0 ? `დაგვიანებულია ${Math.abs(daysUntilDue)} დღით!` : daysUntilDue === 0 ? 'დღეს უნდა გადაიხადო!' : `${daysUntilDue} დღე დარჩა`}
@@ -249,8 +249,8 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
                     </div>
                   </label>
                   <div className="flex items-center gap-0.5 ml-1">
-                    <Button variant="ghost" size="icon" onClick={() => startEdit(bill)} className="h-6 w-6 text-slate-400 hover:text-slate-200"><Pencil className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleRemove(bill.id, bill.name, bill.amount)} className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"><X className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => startEdit(bill)} className="h-6 w-6 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"><Pencil className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemove(bill.id, bill.name, bill.amount)} className="h-6 w-6 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"><X className="h-3 w-3" /></Button>
                   </div>
                 </CardContent>
               </Card>

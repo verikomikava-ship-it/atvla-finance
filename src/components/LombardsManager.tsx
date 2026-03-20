@@ -173,7 +173,7 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
 
     if (lombard.id === editingId) {
       return (
-        <Card key={lombard.id} className="bg-amber-500/10 border-amber-700/50 p-2">
+        <Card key={lombard.id} className="bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-700/50 p-2 rounded-2xl">
           <div className="space-y-1.5">
             <Input type="text" value={editItemName} onChange={(e) => setEditItemName(e.target.value)} className="h-7 text-xs" placeholder="ნივთის დასახელება" />
             <div className="flex gap-1.5">
@@ -196,17 +196,17 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
     return (
       <Card key={lombard.id} className={cn(
         'border-l-4 overflow-hidden',
-        lombard.active ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-500/10 border-slate-500/30 opacity-60'
+        lombard.active ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-700/50 rounded-2xl' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl opacity-60'
       )}>
         <CardContent className="p-2">
           <div className="flex justify-between items-start">
             <div className="flex-1">
               {/* სათაური + კონტრაქტი */}
               <div className="flex items-center gap-1.5 mb-0.5">
-                <Package className="h-3.5 w-3.5 text-amber-400" />
-                <p className="font-bold text-xs text-amber-200">{lombard.itemName}</p>
+                <Package className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <p className="font-bold text-xs text-amber-700 dark:text-amber-300">{lombard.itemName}</p>
                 {lombard.contractNumber && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-amber-600/50 text-amber-400">
+                  <Badge variant="outline" className="text-[8px] px-1 py-0 border-amber-300 dark:border-amber-600/50 text-amber-600 dark:text-amber-400">
                     <FileText className="h-2 w-2 mr-0.5" />
                     {lombard.contractNumber}
                   </Badge>
@@ -216,12 +216,12 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
               {/* ძირი თანხა + პროცენტი */}
               <div className="flex gap-3 text-xs mt-1">
                 <div>
-                  <span className="text-slate-400">ძირი: </span>
-                  <span className="font-bold text-red-400">{lombard.principal}₾</span>
+                  <span className="text-slate-600 dark:text-slate-400">ძირი: </span>
+                  <span className="font-bold text-red-600 dark:text-red-400">{lombard.principal}₾</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">%/თვე: </span>
-                  <span className="font-bold text-orange-400">{lombard.monthlyInterest}₾</span>
+                  <span className="text-slate-600 dark:text-slate-400">%/თვე: </span>
+                  <span className="font-bold text-orange-600 dark:text-orange-400">{lombard.monthlyInterest}₾</span>
                 </div>
               </div>
 
@@ -229,21 +229,21 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
               {debt && !debt.paid && (
                 <div className="mt-1.5">
                   <div className="flex justify-between text-[10px] mb-0.5">
-                    <span className="text-amber-300">💸 ძირის დაფარვა:</span>
-                    <span className="text-amber-400 font-bold">
+                    <span className="text-amber-700 dark:text-amber-300">💸 ძირის დაფარვა:</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">
                       {debt.paidAmount || 0}₾ / {debt.amount}₾
                     </span>
                   </div>
-                  <Progress value={debtProgress} className="h-1.5 bg-amber-900/50" indicatorClassName="bg-amber-400" />
+                  <Progress value={debtProgress} className="h-1.5 bg-amber-100 dark:bg-amber-900/50" indicatorClassName="bg-amber-500" />
                 </div>
               )}
               {debt?.paid && (
-                <p className="text-[10px] text-green-400 mt-1 font-bold">✅ ძირი თანხა სრულად დაფარულია</p>
+                <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 font-bold">✅ ძირი თანხა სრულად დაფარულია</p>
               )}
 
               {/* ბილების სტატუსი */}
               <div className="flex items-center gap-2 mt-1 text-[10px]">
-                <span className="text-slate-400">📅 პროცენტი: {billsStatus.paid}/{billsStatus.total} თვე გადახდილი</span>
+                <span className="text-slate-600 dark:text-slate-400">📅 პროცენტი: {billsStatus.paid}/{billsStatus.total} თვე გადახდილი</span>
               </div>
 
               {/* გადახდის თარიღი */}
@@ -263,10 +263,10 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
 
             {/* მოქმედებები */}
             <div className="flex items-center gap-0.5 ml-1">
-              <Button variant="ghost" size="icon" onClick={() => startEdit(lombard)} className="h-6 w-6 text-slate-400 hover:text-slate-200">
+              <Button variant="ghost" size="icon" onClick={() => startEdit(lombard)} className="h-6 w-6 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
                 <Pencil className="h-3 w-3" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleRemove(lombard)} className="h-6 w-6 text-red-400 hover:text-red-300">
+              <Button variant="ghost" size="icon" onClick={() => handleRemove(lombard)} className="h-6 w-6 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
                 <X className="h-3 w-3" />
               </Button>
             </div>
@@ -293,7 +293,7 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
         <Input type="text" placeholder="ხელშეკრულება # (არასავალდებულო)" value={contractNumber} onChange={(e) => setContractNumber(e.target.value)} onKeyDown={handleKeyDown} className={cn('flex-1', COMPACT_INPUT)} />
       </div>
 
-      <div className="bg-amber-500/10 border border-amber-700/30 rounded-md p-2 text-[10px] text-amber-300 space-y-0.5">
+      <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-700/50 rounded-2xl p-2 text-[10px] text-amber-700 dark:text-amber-300 space-y-0.5">
         <p>📌 ძირი თანხა ავტომატურად დაემატება <strong>ვალებში</strong></p>
         <p>📌 ყოველთვიური პროცენტი დაემატება <strong>ყოველთვიურ გადასახადებში</strong> (12 თვე)</p>
       </div>
@@ -304,21 +304,21 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
 
       {/* სტატისტიკა */}
       {activeLombards.length > 0 && (
-        <Card className="bg-amber-500/10 border-amber-700/50">
+        <Card className="bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-700/50 rounded-2xl">
           <CardContent className="p-2 space-y-1">
             <div className="flex justify-between text-xs">
-              <span className="text-amber-300">აქტიური ლობარდები:</span>
-              <span className="font-bold text-amber-300">{activeLombards.length}</span>
+              <span className="text-amber-700 dark:text-amber-300">აქტიური ლობარდები:</span>
+              <span className="font-bold text-amber-700 dark:text-amber-300">{activeLombards.length}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-red-300">სულ ძირი თანხა:</span>
-              <span className="font-bold text-red-300">{totalPrincipal}₾</span>
+              <span className="text-red-600 dark:text-red-400">სულ ძირი თანხა:</span>
+              <span className="font-bold text-red-600 dark:text-red-400">{totalPrincipal}₾</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-orange-300">ყოველთვიური %:</span>
-              <span className="font-bold text-orange-300">{totalMonthlyInterest}₾</span>
+              <span className="text-orange-600 dark:text-orange-400">ყოველთვიური %:</span>
+              <span className="font-bold text-orange-600 dark:text-orange-400">{totalMonthlyInterest}₾</span>
             </div>
-            <div className="flex justify-between text-xs text-amber-200 pt-1.5 border-t border-amber-700">
+            <div className="flex justify-between text-xs text-amber-800 dark:text-amber-200 pt-1.5 border-t border-amber-200 dark:border-amber-700/50">
               <span>წლიური % ჯამი:</span>
               <span className="font-bold">{totalMonthlyInterest * 12}₾</span>
             </div>
@@ -329,9 +329,9 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
       {/* აქტიური ლობარდები */}
       <div className="space-y-2">
         {activeLombards.length === 0 && closedLombards.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">ლობარდი არ დამატებულა</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">ლობარდი არ დამატებულა</p>
         ) : activeLombards.length === 0 ? (
-          <p className="text-center text-slate-500 py-4">ყველა ლობარდი დახურულია</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-4">ყველა ლობარდი დახურულია</p>
         ) : (
           activeLombards.map(renderLombardCard)
         )}
@@ -343,7 +343,7 @@ export const LombardsManager: React.FC<LombardsManagerProps> = ({
           <Button
             variant="ghost"
             onClick={() => setShowClosed(!showClosed)}
-            className="w-full flex justify-between items-center text-sm font-bold text-green-400 border-t border-slate-700 rounded-none pt-3"
+            className="w-full flex justify-between items-center text-sm font-bold text-green-600 dark:text-green-400 border-t border-slate-200 dark:border-slate-700 rounded-none pt-3"
           >
             <span className="flex items-center gap-1">
               <Check className="h-4 w-4" />

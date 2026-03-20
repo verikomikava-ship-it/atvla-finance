@@ -21,7 +21,7 @@ type CategoryTotals = Record<ExpenseCategory, number>;
 
 const DonutChart: React.FC<{ data: CategoryTotals; size?: number }> = ({ data, size = 120 }) => {
   const total = Object.values(data).reduce((s, v) => s + v, 0);
-  if (total === 0) return <p className="text-slate-500 text-xs text-center py-4">ხარჯი არ არის</p>;
+  if (total === 0) return <p className="text-slate-500 dark:text-slate-400 text-xs text-center py-4">ხარჯი არ არის</p>;
 
   const radius = (size - 16) / 2;
   const cx = size / 2;
@@ -57,10 +57,10 @@ const DonutChart: React.FC<{ data: CategoryTotals; size?: number }> = ({ data, s
             transform={`rotate(-90 ${cx} ${cy})`}
           />
         ))}
-        <text x={cx} y={cy - 6} textAnchor="middle" className="fill-slate-200 text-sm font-black">
+        <text x={cx} y={cy - 6} textAnchor="middle" className="fill-slate-700 dark:fill-slate-200 text-sm font-black">
           {total}₾
         </text>
-        <text x={cx} y={cy + 10} textAnchor="middle" className="fill-slate-400 text-[9px]">
+        <text x={cx} y={cy + 10} textAnchor="middle" className="fill-slate-500 dark:fill-slate-400 text-[9px]">
           სულ ხარჯი
         </text>
       </svg>
@@ -68,9 +68,9 @@ const DonutChart: React.FC<{ data: CategoryTotals; size?: number }> = ({ data, s
         {segments.map((seg) => (
           <div key={seg.cat} className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: seg.color }} />
-            <span className="text-slate-300">{seg.cat}:</span>
-            <span className="font-bold text-slate-200">{data[seg.cat]}₾</span>
-            <span className="text-slate-500">({Math.round(seg.pct * 100)}%)</span>
+            <span className="text-slate-600 dark:text-slate-400">{seg.cat}:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{data[seg.cat]}₾</span>
+            <span className="text-slate-500 dark:text-slate-400">({Math.round(seg.pct * 100)}%)</span>
           </div>
         ))}
       </div>
@@ -84,13 +84,13 @@ const HBar: React.FC<{ label: string; value: number; max: number; color: string;
   return (
     <div className="space-y-0.5">
       <div className="flex justify-between items-center text-[11px]">
-        <span className="text-slate-300 flex items-center gap-1">
+        <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
           {icon && <span className="text-xs">{icon}</span>}
           {label}
         </span>
         <span className="font-bold" style={{ color }}>{value}₾</span>
       </div>
-      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </div>
@@ -275,20 +275,20 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
   return (
     <div className="space-y-3">
       {/* კულაბა */}
-      <Card className="border-amber-700/50 bg-gradient-to-r from-amber-900/20 to-amber-800/10">
+      <Card className="border-amber-200 dark:border-amber-700/50 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/10">
         <CardContent className="p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">🏺</span>
               <div>
-                <p className="text-xs text-amber-400/70">კულაბა</p>
-                <p className="text-xl font-black text-amber-300">{totalKulaba}₾</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">კულაბა</p>
+                <p className="text-xl font-black text-amber-700 dark:text-amber-300">{totalKulaba}₾</p>
               </div>
             </div>
             {goalAmount > 0 && (
               <div className="text-right">
                 <Badge variant={kulabaProgress >= 100 ? 'success' : 'warning'}>{Math.round(kulabaProgress)}%</Badge>
-                <p className="text-[10px] text-amber-400/50 mt-0.5">{state.goalName || 'მიზანი'}: {goalAmount}₾</p>
+                <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5">{state.goalName || 'მიზანი'}: {goalAmount}₾</p>
               </div>
             )}
           </div>
@@ -303,61 +303,61 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
 
       {/* ძირითადი მაჩვენებლები */}
       <div className="grid grid-cols-2 gap-2">
-        <Card className="border-green-700/30 bg-green-900/10">
+        <Card className="border-green-200 dark:border-green-700/50 bg-green-50 dark:bg-green-500/10">
           <CardContent className="p-2.5 text-center">
-            <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
-            <p className="text-[10px] text-green-400/70">შემოსავალი</p>
-            <p className="text-lg font-black text-green-300">{totalInc}₾</p>
-            <p className="text-[9px] text-slate-500">საშ. {avgDailyIncome}₾/დღე</p>
+            <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400 mx-auto mb-1" />
+            <p className="text-[10px] text-green-600 dark:text-green-400">შემოსავალი</p>
+            <p className="text-lg font-black text-green-700 dark:text-green-300">{totalInc}₾</p>
+            <p className="text-[9px] text-slate-500 dark:text-slate-400">საშ. {avgDailyIncome}₾/დღე</p>
           </CardContent>
         </Card>
-        <Card className="border-red-700/30 bg-red-900/10">
+        <Card className="border-red-200 dark:border-red-700/50 bg-red-50 dark:bg-red-500/10">
           <CardContent className="p-2.5 text-center">
-            <TrendingDown className="w-4 h-4 text-red-400 mx-auto mb-1" />
-            <p className="text-[10px] text-red-400/70">გასავალი</p>
-            <p className="text-lg font-black text-red-300">{totalExp}₾</p>
-            <p className="text-[9px] text-slate-500">საშ. {avgDailyExpense}₾/დღე</p>
+            <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400 mx-auto mb-1" />
+            <p className="text-[10px] text-red-600 dark:text-red-400">გასავალი</p>
+            <p className="text-lg font-black text-red-700">{totalExp}₾</p>
+            <p className="text-[9px] text-slate-500 dark:text-slate-400">საშ. {avgDailyExpense}₾/დღე</p>
           </CardContent>
         </Card>
-        <Card className={cn('border-slate-700/30', netBalance >= 0 ? 'bg-emerald-900/10' : 'bg-red-900/10')}>
+        <Card className={cn('border-slate-200 dark:border-slate-700', netBalance >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-red-50 dark:bg-red-500/10')}>
           <CardContent className="p-2.5 text-center">
-            <Wallet className="w-4 h-4 mx-auto mb-1" style={{ color: netBalance >= 0 ? '#10b981' : '#ef4444' }} />
-            <p className="text-[10px] text-slate-400">ნეტო ბალანსი</p>
-            <p className={cn('text-lg font-black', netBalance >= 0 ? 'text-green-300' : 'text-red-300')}>
+            <Wallet className="w-4 h-4 mx-auto mb-1" style={{ color: netBalance >= 0 ? '#059669' : '#dc2626' }} />
+            <p className="text-[10px] text-slate-600 dark:text-slate-400">ნეტო ბალანსი</p>
+            <p className={cn('text-lg font-black', netBalance >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700')}>
               {netBalance >= 0 ? '+' : ''}{netBalance}₾
             </p>
           </CardContent>
         </Card>
-        <Card className="border-orange-700/30 bg-orange-900/10">
+        <Card className="border-orange-200 dark:border-orange-700/50 bg-orange-50 dark:bg-orange-500/10">
           <CardContent className="p-2.5 text-center">
-            <Flame className="w-4 h-4 text-orange-400 mx-auto mb-1" />
-            <p className="text-[10px] text-orange-400/70">სტრიქი</p>
-            <p className="text-lg font-black text-orange-300">{streaks.current} დღე</p>
-            <p className="text-[9px] text-slate-500">ბესტ: {streaks.best} დღე</p>
+            <Flame className="w-4 h-4 text-orange-600 dark:text-orange-400 mx-auto mb-1" />
+            <p className="text-[10px] text-orange-600 dark:text-orange-400">სტრიქი</p>
+            <p className="text-lg font-black text-orange-700 dark:text-orange-300">{streaks.current} დღე</p>
+            <p className="text-[9px] text-slate-500 dark:text-slate-400">ბესტ: {streaks.best} დღე</p>
           </CardContent>
         </Card>
       </div>
 
       {/* პროგრესი */}
-      <Card className="border-slate-700/30">
+      <Card className="border-slate-200 dark:border-slate-700">
         <CardContent className="p-3 space-y-2">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" /> შევსებული:</span>
+            <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" /> შევსებული:</span>
             <span className="font-bold">{filledDays}/365</span>
           </div>
           <Progress value={(filledDays / 365) * 100} indicatorClassName="bg-slate-400" className="h-1.5" />
           <div className="flex justify-between text-xs">
-            <span className="text-slate-400 flex items-center gap-1"><Target className="w-3 h-3" /> გეგმა შესრულებული:</span>
-            <span className="font-bold text-green-400">{daysWithGoal} დღე ({filledDays > 0 ? Math.round((daysWithGoal / filledDays) * 100) : 0}%)</span>
+            <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1"><Target className="w-3 h-3" /> გეგმა შესრულებული:</span>
+            <span className="font-bold text-green-600 dark:text-green-400">{daysWithGoal} დღე ({filledDays > 0 ? Math.round((daysWithGoal / filledDays) * 100) : 0}%)</span>
           </div>
         </CardContent>
       </Card>
 
       {/* ტოპ ხარჯვის კატეგორიები */}
       {topSubcategories.length > 0 && (
-        <Card className="border-slate-700/30">
+        <Card className="border-slate-200 dark:border-slate-700">
           <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+            <CardTitle className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <BarChart3 className="w-4 h-4" /> სად იხარჯება ფული
             </CardTitle>
           </CardHeader>
@@ -371,15 +371,15 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
 
       {/* კომუნალური დეტალები */}
       {utilityTotals.length > 0 && (
-        <Card className="border-teal-700/30 bg-teal-900/10">
+        <Card className="border-teal-200 dark:border-teal-700/50 bg-teal-50 dark:bg-teal-500/10">
           <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="text-sm text-teal-300 flex items-center gap-1.5">
+            <CardTitle className="text-sm text-teal-700 dark:text-teal-300 flex items-center gap-1.5">
               <Zap className="w-4 h-4" /> კომუნალური — {utilityTotal}₾
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 space-y-1.5">
             {utilityTotals.map((util) => (
-              <div key={util.name} className="flex items-center justify-between px-2 py-1 rounded-md" style={{ backgroundColor: `${util.color}10` }}>
+              <div key={util.name} className="flex items-center justify-between px-2 py-1 rounded-xl" style={{ backgroundColor: `${util.color}10` }}>
                 <span className="text-xs flex items-center gap-1.5">
                   <span>{util.icon}</span>
                   <span style={{ color: util.color }} className="font-bold">{util.name}</span>
@@ -393,19 +393,19 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
 
       {/* დამატებითი შემოსავლის წყაროები */}
       {extraIncomeSources.length > 0 && (
-        <Card className="border-emerald-700/30 bg-emerald-900/10">
+        <Card className="border-emerald-200 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-500/10">
           <CardHeader className="pb-1 px-3 pt-3">
-            <CardTitle className="text-sm text-emerald-300 flex items-center gap-1.5">
+            <CardTitle className="text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4" /> დამატებითი შემოსავალი — {totalExtraIncome}₾
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 space-y-1.5">
             {extraIncomeSources.map((src) => (
-              <div key={src.name} className="flex items-center justify-between px-2 py-1 rounded-md" style={{ backgroundColor: `${src.color}10` }}>
+              <div key={src.name} className="flex items-center justify-between px-2 py-1 rounded-xl" style={{ backgroundColor: `${src.color}10` }}>
                 <span className="text-xs flex items-center gap-1.5">
                   <span>{src.icon}</span>
                   <span style={{ color: src.color }} className="font-bold">{src.name}</span>
-                  {src.count > 1 && <span className="text-[9px] text-slate-500">({src.count}x)</span>}
+                  {src.count > 1 && <span className="text-[9px] text-slate-500 dark:text-slate-400">({src.count}x)</span>}
                 </span>
                 <span className="text-xs font-black" style={{ color: src.color }}>{src.amount}₾</span>
               </div>
@@ -415,9 +415,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
       )}
 
       {/* ხარჯების კატეგორიები - donut */}
-      <Card className="border-slate-600/30">
+      <Card className="border-slate-200 dark:border-slate-700">
         <CardHeader className="pb-1 px-3 pt-3">
-          <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+          <CardTitle className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
             <PieChart className="w-4 h-4" /> ხარჯების კატეგორიები
           </CardTitle>
         </CardHeader>
@@ -427,9 +427,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
       </Card>
 
       {/* თვიური ბარ-ჩარტი */}
-      <Card className="border-slate-600/30">
+      <Card className="border-slate-200 dark:border-slate-700">
         <CardHeader className="pb-1 px-3 pt-3">
-          <CardTitle className="text-sm text-yellow-400 flex items-center gap-1.5">
+          <CardTitle className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4" /> თვიური შედარება
           </CardTitle>
         </CardHeader>
@@ -442,11 +442,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
             return (
               <div key={index} className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-yellow-400 font-bold w-20">{month}</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold w-20">{month}</span>
                   <div className="flex gap-3 text-[10px]">
-                    <span className="text-green-400">+{stat.inc}₾</span>
-                    <span className="text-red-400">-{stat.exp}₾</span>
-                    <span className={cn('font-bold', balance >= 0 ? 'text-emerald-300' : 'text-red-300')}>
+                    <span className="text-green-600 dark:text-green-400">+{stat.inc}₾</span>
+                    <span className="text-red-600 dark:text-red-400">-{stat.exp}₾</span>
+                    <span className={cn('font-bold', balance >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700')}>
                       {balance >= 0 ? '+' : ''}{balance}₾
                     </span>
                   </div>
@@ -456,7 +456,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
                   <div className="bg-red-500/60 rounded-r-full transition-all" style={{ width: `${(stat.exp / maxMonthlyInc) * 100}%` }} />
                 </div>
                 {stat.kulaba > 0 && (
-                  <p className="text-[9px] text-amber-400/60">🏺 {stat.kulaba}₾</p>
+                  <p className="text-[9px] text-amber-600 dark:text-amber-400">🏺 {stat.kulaba}₾</p>
                 )}
               </div>
             );
@@ -466,24 +466,24 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
 
       {/* ვალები & ბილები */}
       <div className="grid grid-cols-2 gap-2">
-        <Card className="border-purple-700/30 bg-purple-900/10">
+        <Card className="border-purple-200 dark:border-purple-700/50 bg-purple-50 dark:bg-purple-500/10">
           <CardContent className="p-2.5">
             <div className="flex items-center gap-1.5 mb-2">
-              <CreditCard className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-xs font-bold text-purple-300">ვალები</span>
+              <CreditCard className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-bold text-purple-700 dark:text-purple-300">ვალები</span>
             </div>
             <div className="space-y-1 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-purple-300/70">გადახდილი:</span>
-                <span className="font-bold text-purple-300">{debtsPaid}₾</span>
+                <span className="text-purple-600 dark:text-purple-400">გადახდილი:</span>
+                <span className="font-bold text-purple-700 dark:text-purple-300">{debtsPaid}₾</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-purple-400/70">დარჩენილი:</span>
-                <span className="font-bold text-purple-400">{debtsRemaining}₾</span>
+                <span className="text-purple-600 dark:text-purple-400">დარჩენილი:</span>
+                <span className="font-bold text-purple-700 dark:text-purple-300">{debtsRemaining}₾</span>
               </div>
-              <div className="flex justify-between pt-1 border-t border-purple-700/30">
-                <span className="text-purple-200/70">სულ:</span>
-                <span className="font-bold text-purple-200">{debtsTotal}₾</span>
+              <div className="flex justify-between pt-1 border-t border-purple-200 dark:border-purple-700/50">
+                <span className="text-purple-700 dark:text-purple-300">სულ:</span>
+                <span className="font-bold text-purple-800 dark:text-purple-200">{debtsTotal}₾</span>
               </div>
             </div>
             {debtsTotal > 0 && (
@@ -492,24 +492,24 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
           </CardContent>
         </Card>
 
-        <Card className="border-blue-700/30 bg-blue-900/10">
+        <Card className="border-blue-200 dark:border-blue-700/50 bg-blue-50 dark:bg-blue-500/10">
           <CardContent className="p-2.5">
             <div className="flex items-center gap-1.5 mb-2">
-              <Receipt className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-xs font-bold text-blue-300">გადასახადი</span>
+              <Receipt className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="text-xs font-bold text-blue-700 dark:text-blue-300">გადასახადი</span>
             </div>
             <div className="space-y-1 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-blue-300/70">გადახდილი:</span>
-                <span className="font-bold text-blue-300">{billsPaid}₾</span>
+                <span className="text-blue-600 dark:text-blue-400">გადახდილი:</span>
+                <span className="font-bold text-blue-700 dark:text-blue-300">{billsPaid}₾</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-blue-400/70">დარჩენილი:</span>
-                <span className="font-bold text-blue-400">{billsRemaining}₾</span>
+                <span className="text-blue-600 dark:text-blue-400">დარჩენილი:</span>
+                <span className="font-bold text-blue-700 dark:text-blue-300">{billsRemaining}₾</span>
               </div>
-              <div className="flex justify-between pt-1 border-t border-blue-700/30">
-                <span className="text-blue-200/70">სულ:</span>
-                <span className="font-bold text-blue-200">{billsTotal}₾</span>
+              <div className="flex justify-between pt-1 border-t border-blue-200 dark:border-blue-700/50">
+                <span className="text-blue-700 dark:text-blue-300">სულ:</span>
+                <span className="font-bold text-blue-800 dark:text-blue-200">{billsTotal}₾</span>
               </div>
             </div>
             {billsTotal > 0 && (
@@ -520,9 +520,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
       </div>
 
       {/* თვიური კატეგორიები */}
-      <Card className="border-slate-600/30">
+      <Card className="border-slate-200 dark:border-slate-700">
         <CardHeader className="pb-1 px-3 pt-3">
-          <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+          <CardTitle className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
             <PieChart className="w-4 h-4" /> კატეგორიები თვიურად
           </CardTitle>
         </CardHeader>
@@ -534,9 +534,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
               if (!hasData) return null;
 
               return (
-                <Card key={index} className="border-slate-700/50 bg-slate-800/30">
+                <Card key={index} className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                   <CardContent className="p-2">
-                    <p className="text-[11px] font-bold text-yellow-400 mb-1 text-center">{month}</p>
+                    <p className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-1 text-center">{month}</p>
                     <DonutChart data={catData} size={90} />
                   </CardContent>
                 </Card>

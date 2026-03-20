@@ -305,7 +305,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
   const spentToday = expensesOnly;
   const remainingBudget = dailyBudget - spentToday;
   const balanceColor =
-    balance >= dailyTarget ? 'text-green-300' : balance < 0 ? 'text-red-400' : 'text-yellow-400';
+    balance >= dailyTarget ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400';
 
   const goalProgress = Math.min((income / dailyTarget) * 100, 100);
   const goalColor = goalProgress >= 100 ? '#10b981' : goalProgress >= 50 ? '#f59e0b' : '#ef4444';
@@ -320,10 +320,10 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
 
   const CATEGORY_ORDER: ExpenseCategory[] = ['საჭირო', 'აუცილებელი', 'სურვილი', 'გაუთვალისწინებელი'];
   const CATEGORY_STYLE: Record<ExpenseCategory, { bg: string; border: string; text: string; icon: string }> = {
-    'საჭირო': { bg: 'bg-emerald-900/30', border: 'border-emerald-700/50', text: 'text-emerald-400', icon: '✓' },
-    'აუცილებელი': { bg: 'bg-red-900/30', border: 'border-red-700/50', text: 'text-red-400', icon: '!' },
-    'სურვილი': { bg: 'bg-orange-900/30', border: 'border-orange-700/50', text: 'text-orange-400', icon: '✦' },
-    'გაუთვალისწინებელი': { bg: 'bg-purple-900/30', border: 'border-purple-700/50', text: 'text-purple-400', icon: '?' },
+    'საჭირო': { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-700', text: 'text-emerald-700 dark:text-emerald-300', icon: '✓' },
+    'აუცილებელი': { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-700', text: 'text-red-700 dark:text-red-300', icon: '!' },
+    'სურვილი': { bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-700', text: 'text-orange-700 dark:text-orange-300', icon: '✦' },
+    'გაუთვალისწინებელი': { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-700', text: 'text-purple-700 dark:text-purple-300', icon: '?' },
   };
 
   const nextCategory = (current: ExpenseCategory): ExpenseCategory => {
@@ -343,28 +343,28 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
       <div className="flex gap-3 max-w-[900px] w-full max-h-[90vh] animate-fadeIn" onKeyDown={handleKeyDown}>
       {/* მარცხენა პანელი — დღიური */}
-      <Card className="hidden md:flex flex-col w-[400px] border-amber-800/40 shadow-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #1c1a15 0%, #1f1d17 100%)' }}>
-        <div className="px-4 py-2.5 flex items-center gap-2 border-b border-amber-800/30" style={{ background: 'linear-gradient(90deg, #2a2520, #1f1d17)' }}>
-          <BookOpen className="h-4 w-4 text-amber-500" />
-          <p className="text-sm font-bold text-amber-400">დღიური</p>
-          <span className="text-xs text-amber-600 ml-auto">{displayDate}</span>
+      <Card className="hidden md:flex flex-col w-[400px] border-amber-200 dark:border-amber-700 shadow-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' }}>
+        <div className="px-4 py-2.5 flex items-center gap-2 border-b border-amber-200 dark:border-amber-700" style={{ background: 'linear-gradient(90deg, #fef3c7, #fffbeb)' }}>
+          <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <p className="text-sm font-bold text-amber-700 dark:text-amber-300">დღიური</p>
+          <span className="text-xs text-amber-500 dark:text-amber-400 ml-auto">{displayDate}</span>
         </div>
         <div className="flex-1 relative overflow-y-auto">
-          <div className="absolute left-8 top-0 bottom-0 w-px bg-amber-800/15" />
+          <div className="absolute left-8 top-0 bottom-0 w-px bg-amber-300/40" />
           <textarea
             placeholder="რა მოხდა დღეს... &#10;&#10;ჩაწერე აზრები, მოვლენები, გეგმები..."
             value={formData.comment}
             onChange={(e) => handleChange('comment', e.target.value)}
-            className="w-full h-full min-h-[300px] p-4 pl-12 text-sm text-amber-100/90 placeholder-amber-800/40 resize-none focus:outline-none"
+            className="w-full h-full min-h-[300px] p-4 pl-12 text-sm text-amber-900 placeholder-amber-400 resize-none focus:outline-none"
             style={{
               background: 'transparent',
               lineHeight: '2',
-              backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(180,140,80,0.06) 31px, rgba(180,140,80,0.06) 32px)',
+              backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(180,140,80,0.12) 31px, rgba(180,140,80,0.12) 32px)',
             }}
           />
         </div>
@@ -373,12 +373,12 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
       {/* მარჯვენა პანელი — ფინანსური */}
       <Card
         ref={modalRef}
-        className="w-full md:w-[480px] max-h-[90vh] overflow-y-auto border-amber-600/50 bg-gradient-to-br from-slate-900 to-[#1e293b] shadow-2xl"
+        className="w-full md:w-[480px] max-h-[90vh] overflow-y-auto border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
       >
         {/* ჰედერი */}
-        <CardHeader className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 to-[#1e293b] border-b border-amber-600/30 flex-row items-center justify-between space-y-0 px-3 py-2">
+        <CardHeader className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex-row items-center justify-between space-y-0 px-3 py-2">
           <div>
-            <CardTitle className="text-base font-black text-amber-400">{displayDate}</CardTitle>
+            <CardTitle className="text-base font-black text-blue-700 dark:text-blue-300">{displayDate}</CardTitle>
             <p className="text-[10px] text-muted-foreground">{date}</p>
           </div>
           {/* პროგრეს ბარი ჰედერში */}
@@ -412,7 +412,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">შემოსავალი</p>
               <label className="flex items-center gap-1.5 cursor-pointer hover:bg-accent rounded px-1.5 py-0.5 transition-colors">
-                <CheckSquare className="h-3 w-3 text-amber-400" />
+                <CheckSquare className="h-3 w-3 text-blue-500" />
                 <span className="text-[10px] font-medium">{dailyTarget}₾</span>
                 <input
                   type="checkbox"
@@ -481,20 +481,20 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
 
           {/* ბიუჯეტის ინფო */}
           <div className="grid grid-cols-3 gap-1.5 text-center">
-            <div className={cn('rounded-md px-1.5 py-1 border', remainingBudget >= 0 ? 'border-emerald-700/40 bg-emerald-900/20' : 'border-red-700/40 bg-red-900/20')}>
+            <div className={cn('rounded-xl px-1.5 py-1 border', remainingBudget >= 0 ? 'border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20' : 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20')}>
               <p className="text-[9px] text-muted-foreground">ხარჯვის ლიმიტი</p>
-              <p className={cn('text-sm font-black', remainingBudget >= 0 ? 'text-emerald-400' : 'text-red-400')}>{remainingBudget}₾</p>
+              <p className={cn('text-sm font-black', remainingBudget >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>{remainingBudget}₾</p>
             </div>
             {unpaidBillsTotal > 0 && (
-              <div className="rounded-md px-1.5 py-1 border border-blue-700/40 bg-blue-900/20">
+              <div className="rounded-xl px-1.5 py-1 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20">
                 <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5"><Receipt className="h-2.5 w-2.5" />ბილები</p>
-                <p className="text-sm font-black text-blue-400">{unpaidBillsTotal}₾</p>
+                <p className="text-sm font-black text-blue-600 dark:text-blue-400">{unpaidBillsTotal}₾</p>
               </div>
             )}
             {totalDebtRemaining > 0 && (
-              <div className="rounded-md px-1.5 py-1 border border-purple-700/40 bg-purple-900/20">
+              <div className="rounded-xl px-1.5 py-1 border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20">
                 <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5"><CreditCard className="h-2.5 w-2.5" />ვალები</p>
-                <p className="text-sm font-black text-purple-400">{totalDebtRemaining}₾</p>
+                <p className="text-sm font-black text-purple-600 dark:text-purple-400">{totalDebtRemaining}₾</p>
               </div>
             )}
           </div>
@@ -507,8 +507,8 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
               <div className={cn(
                 'px-2 py-1.5 rounded-md border text-[10px] transition-colors',
                 formData.debtPaid
-                  ? 'border-pink-500/50 bg-pink-900/20'
-                  : 'border-purple-700/30 bg-purple-900/15'
+                  ? 'border-pink-300 dark:border-pink-700 bg-pink-50 dark:bg-pink-900/20'
+                  : 'border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20'
               )}>
                 <div className="flex justify-between items-center gap-2">
                   <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
@@ -517,7 +517,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         'w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer',
                         formData.debtPaid
                           ? 'bg-pink-500 border-pink-500'
-                          : 'border-purple-500/60 hover:border-pink-400'
+                          : 'border-purple-400 hover:border-pink-400'
                       )}
                       onClick={() => handleChange('debtPaid', !formData.debtPaid)}
                     >
@@ -525,7 +525,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                     </div>
                     <span className={cn(
                       'font-bold',
-                      formData.debtPaid ? 'text-pink-300' : 'text-purple-300'
+                      formData.debtPaid ? 'text-pink-600 dark:text-pink-400' : 'text-purple-600 dark:text-purple-400'
                     )}>
                       {suggestedDebtPayment}₾/დღე
                     </span>
@@ -534,7 +534,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                     {topPlan && (
                       <span className={cn(
                         'font-bold',
-                        formData.debtPaid ? 'text-pink-400' : 'text-red-400'
+                        formData.debtPaid ? 'text-pink-600 dark:text-pink-400' : 'text-red-600 dark:text-red-400'
                       )}>
                         {topPlan.debt.name} · {topPlan.remainingAmount}₾ · {topPlan.daysToPayoff} დღე
                       </span>
@@ -542,9 +542,9 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                   </div>
                 </div>
                 {formData.debtPaid && repaymentPlans.length > 1 && (
-                  <div className="mt-1 pt-1 border-t border-pink-700/30 flex flex-wrap gap-x-3 gap-y-0.5">
+                  <div className="mt-1 pt-1 border-t border-pink-200 dark:border-pink-700 flex flex-wrap gap-x-3 gap-y-0.5">
                     {repaymentPlans.slice(1).map((plan) => (
-                      <span key={plan.debt.id} className="text-pink-300/70">
+                      <span key={plan.debt.id} className="text-pink-500">
                         {plan.debt.name}: {plan.daysToPayoff} დღე
                       </span>
                     ))}
@@ -647,8 +647,8 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         onChange={(e) => updateExpenseDebt(expense.id, +e.target.value)}
                         className={cn(
                           'w-full h-6 text-[10px] pl-2 pr-1 rounded-md border bg-background appearance-none cursor-pointer',
-                          'border-purple-700/50 focus:outline-none focus:ring-1 focus:ring-purple-500',
-                          'text-purple-200'
+                          'border-purple-200 dark:border-purple-700 focus:outline-none focus:ring-1 focus:ring-purple-500',
+                          'text-purple-700 dark:text-purple-300'
                         )}
                       >
                         <option value="">აირჩიე ვალი...</option>
@@ -668,18 +668,18 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         const afterPayment = remaining - (expense.amount || 0);
                         return (
                           <div className="flex items-center gap-2 text-[9px] px-1">
-                            <span className="text-purple-300">
+                            <span className="text-purple-600 dark:text-purple-400">
                               {linkedDebt.name}: {linkedDebt.amount}₾
                             </span>
                             {(linkedDebt.paidAmount || 0) > 0 && (
-                              <span className="text-green-400">
+                              <span className="text-emerald-600 dark:text-emerald-400">
                                 გადახდილი: {linkedDebt.paidAmount}₾
                               </span>
                             )}
                             {expense.amount > 0 && (
                               <span className={cn(
                                 'font-bold',
-                                afterPayment <= 0 ? 'text-green-400' : 'text-amber-400'
+                                afterPayment <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
                               )}>
                                 → {afterPayment <= 0 ? 'სრულად დაფარული!' : `დარჩება: ${afterPayment}₾`}
                               </span>
@@ -699,8 +699,8 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         onChange={(e) => updateExpenseBill(expense.id, +e.target.value)}
                         className={cn(
                           'w-full h-6 text-[10px] pl-2 pr-1 rounded-md border bg-background appearance-none cursor-pointer',
-                          'border-blue-700/50 focus:outline-none focus:ring-1 focus:ring-blue-500',
-                          'text-blue-200'
+                          'border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500',
+                          'text-blue-700 dark:text-blue-300'
                         )}
                       >
                         <option value="">აირჩიე გადასახადი...</option>
@@ -716,16 +716,16 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         if (!linkedBill) return null;
                         return (
                           <div className="flex items-center gap-2 text-[9px] px-1">
-                            <span className="text-blue-300">
+                            <span className="text-blue-600 dark:text-blue-400">
                               {linkedBill.name}: {linkedBill.amount}₾
                             </span>
                             {linkedBill.dueDate && (
-                              <span className="text-amber-400">
+                              <span className="text-amber-600 dark:text-amber-400">
                                 ვადა: {linkedBill.dueDate}
                               </span>
                             )}
                             {expense.amount > 0 && (
-                              <span className="text-green-400 font-bold">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                                 → გადახდილი!
                               </span>
                             )}
@@ -748,7 +748,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                             className={cn(
                               'px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all',
                               expense.utilityType === util.key
-                                ? 'ring-1 ring-offset-1 ring-offset-slate-900'
+                                ? 'ring-1 ring-offset-1 ring-offset-white dark:ring-offset-slate-900'
                                 : 'opacity-60 hover:opacity-100'
                             )}
                             style={{
@@ -790,7 +790,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
             <Button
               variant="outline"
               onClick={() => addExpense()}
-              className="w-full mt-1.5 h-7 text-xs border-dashed border-border text-muted-foreground hover:border-amber-500 hover:text-amber-400"
+              className="w-full mt-1.5 h-7 text-xs border-dashed border-border text-muted-foreground hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
             >
               <Plus className="h-3 w-3 mr-1" />
               ხარჯის დამატება
@@ -798,7 +798,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
           </div>
 
           {/* კულაბა */}
-          <div className="px-2.5 py-2 bg-gradient-to-r from-amber-900/30 to-amber-800/20 rounded-lg border border-amber-700/50">
+          <div className="px-2.5 py-2 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-700">
             <div className="flex gap-2 items-center">
               <span className="text-sm">🏺</span>
               <Input
@@ -806,11 +806,11 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                 placeholder="კულაბა ₾"
                 value={formData.kulaba || ''}
                 onChange={(e) => handleChange('kulaba', Math.max(0, +e.target.value))}
-                className="flex-1 h-7 text-xs border-amber-700/50 focus-visible:ring-amber-500"
+                className="flex-1 h-7 text-xs border-amber-200 dark:border-amber-700 focus-visible:ring-amber-500"
               />
               {availableForKulaba > 0 && (
                 <>
-                  <span className="text-[9px] text-amber-400/70">{availableForKulaba}₾</span>
+                  <span className="text-[9px] text-amber-600 dark:text-amber-400">{availableForKulaba}₾</span>
                   <Button
                     variant="warning"
                     size="sm"
@@ -825,23 +825,23 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
           </div>
 
           {/* დღიური — მობილურზე */}
-          <div className="md:hidden rounded-lg overflow-hidden border border-amber-800/40" style={{ background: 'linear-gradient(135deg, #1c1a15 0%, #1f1d17 100%)' }}>
-            <div className="px-2.5 py-1 flex items-center gap-1.5 border-b border-amber-800/30" style={{ background: 'linear-gradient(90deg, #2a2520, #1f1d17)' }}>
-              <BookOpen className="h-3 w-3 text-amber-500" />
-              <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">დღიური</p>
+          <div className="md:hidden rounded-2xl overflow-hidden border border-amber-200 dark:border-amber-700" style={{ background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' }}>
+            <div className="px-2.5 py-1 flex items-center gap-1.5 border-b border-amber-200 dark:border-amber-700" style={{ background: 'linear-gradient(90deg, #fef3c7, #fffbeb)' }}>
+              <BookOpen className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+              <p className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">დღიური</p>
             </div>
             <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-px bg-amber-800/20" />
+              <div className="absolute left-6 top-0 bottom-0 w-px bg-amber-300/40" />
               <textarea
                 placeholder="რა მოხდა დღეს..."
                 value={formData.comment}
                 onChange={(e) => handleChange('comment', e.target.value)}
                 rows={3}
-                className="w-full p-2 pl-8 text-xs text-amber-100/90 placeholder-amber-800/50 resize-none focus:outline-none"
+                className="w-full p-2 pl-8 text-xs text-amber-900 placeholder-amber-400 resize-none focus:outline-none"
                 style={{
                   background: 'transparent',
                   lineHeight: '1.7',
-                  backgroundImage: 'repeating-linear-gradient(transparent, transparent 20px, rgba(180,140,80,0.08) 20px, rgba(180,140,80,0.08) 21px)',
+                  backgroundImage: 'repeating-linear-gradient(transparent, transparent 20px, rgba(180,140,80,0.15) 20px, rgba(180,140,80,0.15) 21px)',
                 }}
               />
             </div>
@@ -849,24 +849,24 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
 
           {/* ბალანსი + ღილაკები ერთ რიგში */}
           <div className="flex gap-2 items-stretch">
-            <Card className="border-blue-500/50 bg-gradient-to-r from-blue-900/20 to-blue-800/10 flex-1">
+            <Card className="border-blue-200 dark:border-blue-700 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 flex-1">
               <CardContent className="p-2">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-[9px] text-blue-300">ბალანსი</p>
+                    <p className="text-[9px] text-blue-500">ბალანსი</p>
                     <p className={cn('text-lg font-black', balanceColor)}>
                       {balance >= 0 ? '+' : ''}{balance}₾
                     </p>
                   </div>
                   <div className="text-right text-[10px] space-y-0.5">
-                    <p className="text-green-400 flex items-center justify-end gap-0.5">
+                    <p className="text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-0.5">
                       <ArrowUp className="h-2.5 w-2.5" /> {income}₾
                     </p>
-                    <p className="text-red-400 flex items-center justify-end gap-0.5">
+                    <p className="text-red-500 flex items-center justify-end gap-0.5">
                       <ArrowDown className="h-2.5 w-2.5" /> {expenses}₾
                     </p>
                     {(formData.kulaba || 0) > 0 && (
-                      <p className="text-amber-400">🏺 {formData.kulaba}₾</p>
+                      <p className="text-amber-600 dark:text-amber-400">🏺 {formData.kulaba}₾</p>
                     )}
                   </div>
                 </div>

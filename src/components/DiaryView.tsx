@@ -31,22 +31,22 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ state, selectedMonth }) =>
     <div className="mb-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-500/10 border-2 border-amber-800/40 hover:border-amber-700/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 hover:border-amber-300 dark:hover:border-amber-600 transition-colors"
       >
         <span className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-amber-500" />
-          <span className="text-amber-400 font-bold text-sm">დღიური</span>
-          <span className="text-amber-700 text-xs">({entries.length} ჩანაწერი)</span>
+          <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <span className="text-amber-700 dark:text-amber-300 font-bold text-sm">დღიური</span>
+          <span className="text-amber-500 dark:text-amber-400 text-xs">({entries.length} ჩანაწერი)</span>
         </span>
         {isOpen ? (
-          <ChevronUp className="h-4 w-4 text-amber-700" />
+          <ChevronUp className="h-4 w-4 text-amber-500 dark:text-amber-400" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-amber-700" />
+          <ChevronDown className="h-4 w-4 text-amber-500 dark:text-amber-400" />
         )}
       </button>
 
       {isOpen && (
-        <Card className="mt-2 bg-amber-500/5 border-2 border-amber-800/30 overflow-hidden">
+        <Card className="mt-2 bg-amber-50/50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 overflow-hidden">
           <CardContent className="p-0">
             <div className="max-h-80 overflow-y-auto">
               {entries.map(([date, data]) => {
@@ -56,16 +56,16 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ state, selectedMonth }) =>
                 const monthNum = dateObj.getMonth() + 1;
 
                 return (
-                  <div key={date} className="border-b border-amber-800/15 last:border-b-0">
+                  <div key={date} className="border-b border-amber-200/50 dark:border-amber-700/50 last:border-b-0">
                     <div className="px-4 pt-3 pb-1 flex items-center gap-2">
-                      <span className="text-amber-600 text-[10px] font-bold">
+                      <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold">
                         {dayNum}/{monthNum} - {dayName}
                       </span>
                     </div>
                     <div className="relative px-4 pb-3">
-                      <div className="absolute left-8 top-0 bottom-0 w-px bg-amber-800/15" />
+                      <div className="absolute left-8 top-0 bottom-0 w-px bg-amber-300/30 dark:bg-amber-600/30" />
                       <p
-                        className="pl-6 text-sm text-amber-100/80 whitespace-pre-wrap"
+                        className="pl-6 text-sm text-amber-900 dark:text-amber-200 whitespace-pre-wrap"
                         style={{ lineHeight: '1.8' }}
                       >
                         {data.comment}

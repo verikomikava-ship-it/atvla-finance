@@ -66,32 +66,32 @@ export const Calendar: React.FC<CalendarProps> = ({ state, selectedMonth, onDayS
             !workDay && profile?.incomeType === 'both' && 'opacity-60'
           )}
           style={isToday ? {
-            boxShadow: '0 0 0 3px #fbbf24, 0 0 20px rgba(251,191,36,0.4)',
-            borderColor: '#fbbf24',
+            boxShadow: '0 0 0 3px #3b82f6, 0 0 20px rgba(59,130,246,0.3)',
+            borderColor: '#3b82f6',
           } : undefined}
         >
           <div className={cn(
             'text-xs font-semibold flex items-center gap-0.5',
-            isToday ? 'text-yellow-300' : 'text-slate-200'
+            isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-700 dark:text-slate-300'
           )}>
             {isToday && <MapPin className="inline-block w-3 h-3 -mt-0.5" />}
             {dayNum}
             {workDay && profile?.incomeType !== 'freelance' && (
-              <Briefcase className="w-2.5 h-2.5 text-slate-400 ml-auto" />
+              <Briefcase className="w-2.5 h-2.5 text-slate-500 dark:text-slate-400 ml-auto" />
             )}
           </div>
-          <span className="text-[10px] font-mono text-slate-300 mt-0.5">
+          <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400 mt-0.5">
             {total}₾
           </span>
           <div className="flex items-center gap-0.5 mt-0.5">
             {data?.debtPaid && (
               <div title="ვალი გადახდილია">
-                <Check className="w-2.5 h-2.5 text-pink-400" />
+                <Check className="w-2.5 h-2.5 text-pink-500" />
               </div>
             )}
             {data?.comment && (
               <div title={data.comment}>
-                <MessageSquare className="w-2.5 h-2.5 text-slate-400" />
+                <MessageSquare className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500" />
               </div>
             )}
           </div>
@@ -106,7 +106,7 @@ export const Calendar: React.FC<CalendarProps> = ({ state, selectedMonth, onDayS
       {cards.length > 0 ? (
         cards
       ) : (
-        <div className="col-span-full text-center text-slate-500 py-8 font-medium">
+        <div className="col-span-full text-center text-slate-400 dark:text-slate-500 py-8 font-medium">
           დღის ჩანაწერი არ აქვს
         </div>
       )}
