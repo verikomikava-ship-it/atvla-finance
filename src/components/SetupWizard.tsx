@@ -1289,7 +1289,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                           />
                         </div>
                       </div>
-                      <p className="text-[10px] text-red-500 dark:text-red-400/70">1 დღე დაგვიანება = {bankLateFee}₾ + {bankDailyPenalty}% · 7 დღე = {bankLateFee}₾ + {((parseFloat(bankDailyPenalty) || 0) * (parseInt(bankPrincipal) || 0) / 100 * 7).toFixed(0)}₾</p>
+                      <p className="text-[10px] text-red-500 dark:text-red-400/70">1 დღე = მხოლოდ {bankLateFee}₾ · 7 დღე = {bankLateFee}₾ + {((parseFloat(bankDailyPenalty) || 0) * (parseInt(bankPrincipal) || 0) / 100 * 6).toFixed(0)}₾ პენალტი</p>
                     </div>
                     {/* კალკულაციის პანელი */}
                     {(() => {
@@ -1370,11 +1370,15 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                               {[1, 7, 14, 30].map((days) => {
                                 const lf = parseFloat(bankLateFee) || 20;
                                 const dp = parseFloat(bankDailyPenalty) || 0.5;
-                                const penalty = lf + (dp / 100 * principal * days);
+                                const penaltyDays = Math.max(0, days - 1);
+                                const penalty = lf + (dp / 100 * principal * penaltyDays);
                                 return (
                                   <div key={days} className="flex justify-between text-xs">
                                     <span className="text-muted-foreground">{days} დღე დაგვიანება:</span>
-                                    <span className="font-bold text-red-600 dark:text-red-400">+{penalty.toFixed(0)}₾</span>
+                                    <span className="font-bold text-red-600 dark:text-red-400">
+                                      +{penalty.toFixed(0)}₾
+                                      {days === 1 ? ' (ფიქს.)' : ` (${lf}₾ + ${penaltyDays}დღ × ${dp}%)`}
+                                    </span>
                                   </div>
                                 );
                               })}
