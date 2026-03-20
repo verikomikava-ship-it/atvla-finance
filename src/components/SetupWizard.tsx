@@ -482,8 +482,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const nativeInputClass = "flex h-10 w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-lg my-auto py-8">
 
         {/* Step 0: მისასალმებელი + ავტორიზაცია */}
         {step === 0 && (
