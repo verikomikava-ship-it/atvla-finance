@@ -183,6 +183,8 @@ export type BankLoan = {
   billIds: number[];          // დაკავშირებული ბილების ID-ები
   active: boolean;
   createdAt: string;
+  lateFee?: number;           // ფიქსირებული ჯარიმა პირველ დღეს (default: 20₾)
+  dailyPenaltyRate?: number;  // დღიური პენალტი % (default: 0.5%)
 };
 
 // ლობარდი

@@ -101,6 +101,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const [bankItems, setBankItems] = useState<{
     type: BankProductType; name?: string; principal: number;
     monthlyInterest: number; paymentDay: number; startDate: string; endDate: string;
+    lateFee: number; dailyPenaltyRate: number;
   }[]>([]);
   const [bankType, setBankType] = useState<BankProductType | null>(null);
   const [bankName, setBankName] = useState('');
@@ -109,6 +110,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const [bankPayDay, setBankPayDay] = useState('');
   const [bankStart, setBankStart] = useState('');
   const [bankEnd, setBankEnd] = useState('');
+  const [bankLateFee, setBankLateFee] = useState('20');
+  const [bankDailyPenalty, setBankDailyPenalty] = useState('0.5');
 
   // სინქრონიზაცია: string → profile number
   const updateSalary = (val: string) => {
@@ -298,9 +301,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
     setBankItems((prev) => [...prev, {
       type: bankType, name: bankName.trim() || undefined, principal: pr,
       monthlyInterest: interest, paymentDay: day, startDate: bankStart, endDate: bankEnd,
+      lateFee: parseFloat(bankLateFee) || 20, dailyPenaltyRate: parseFloat(bankDailyPenalty) || 0.5,
     }]);
     setBankType(null); setBankName(''); setBankPrincipal(''); setBankInterest('');
     setBankPayDay(''); setBankStart(''); setBankEnd('');
+    setBankLateFee('20'); setBankDailyPenalty('0.5');
   };
 
   const removeBankItem = (index: number) => {
@@ -451,6 +456,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
         billIds: bankBillIds,
         active: true,
         createdAt: today,
+        lateFee: item.lateFee,
+        dailyPenaltyRate: item.dailyPenaltyRate,
       });
     });
 
@@ -1195,6 +1202,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                                 {' · '}%/თვე: <span className="text-orange-600 dark:text-orange-400 font-bold">{item.monthlyInterest}₾</span>
                                 {' · '}{months} თვე
                               </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                ⚠️ ჯარიმა: <span className="text-red-500 font-bold">{item.lateFee}₾</span>
+                                {' · '}პენალტი: <span className="text-red-500 font-bold">{item.dailyPenaltyRate}%/დღე</span>
+                              </div>
                             </div>
                           </div>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => removeBankItem(idx)}>
@@ -1258,6 +1269,27 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                         <label className="text-[10px] text-muted-foreground mb-0.5 block">ვადის დასასრული *</label>
                         <Input type="month" value={bankEnd} onChange={(e) => setBankEnd(e.target.value)} className="h-9 text-sm" />
                       </div>
+                    </div>
+                    {/* ჯარიმის პარამეტრები */}
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-700/50 rounded-xl p-2.5 space-y-2">
+                      <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">⚠️ ჯარიმის პარამეტრები</p>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="text-[10px] text-muted-foreground mb-0.5 block">ფიქს. ჯარიმა ₾</label>
+                          <input type="text" inputMode="decimal" value={bankLateFee}
+                            onChange={(e) => setBankLateFee(e.target.value.replace(/[^0-9.]/g, ''))}
+                            className="w-full h-9 rounded-lg border border-red-300 dark:border-red-700 bg-background/50 px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-colors"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-muted-foreground mb-0.5 block">დღიური პენალტი %</label>
+                          <input type="text" inputMode="decimal" value={bankDailyPenalty}
+                            onChange={(e) => setBankDailyPenalty(e.target.value.replace(/[^0-9.]/g, ''))}
+                            className="w-full h-9 rounded-lg border border-red-300 dark:border-red-700 bg-background/50 px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-red-500 dark:text-red-400/70">1 დღე დაგვიანება = {bankLateFee}₾ + {bankDailyPenalty}% · 7 დღე = {bankLateFee}₾ + {((parseFloat(bankDailyPenalty) || 0) * (parseInt(bankPrincipal) || 0) / 100 * 7).toFixed(0)}₾</p>
                     </div>
                     {/* კალკულაციის პანელი */}
                     {(() => {
@@ -1329,6 +1361,23 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                                 <span className="text-muted-foreground">ჯამური ღირებულება:</span>
                                 <span className="font-bold text-red-700 dark:text-red-400">{totalCost.toLocaleString()}₾</span>
                               </div>
+                            </>
+                          )}
+                          {principal > 0 && (
+                            <>
+                              <div className="border-t border-red-200 dark:border-red-800 my-1" />
+                              <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wider">⚠️ დაგვიანების სიმულაცია</p>
+                              {[1, 7, 14, 30].map((days) => {
+                                const lf = parseFloat(bankLateFee) || 20;
+                                const dp = parseFloat(bankDailyPenalty) || 0.5;
+                                const penalty = lf + (dp / 100 * principal * days);
+                                return (
+                                  <div key={days} className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">{days} დღე დაგვიანება:</span>
+                                    <span className="font-bold text-red-600 dark:text-red-400">+{penalty.toFixed(0)}₾</span>
+                                  </div>
+                                );
+                              })}
                             </>
                           )}
                         </div>
