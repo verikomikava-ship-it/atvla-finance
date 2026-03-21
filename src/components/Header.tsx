@@ -16,7 +16,7 @@ import {
   Wallet,
   Settings2,
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface HeaderProps {
   state: AppState;
@@ -350,7 +350,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       <BillAlerts bills={state.bills} debts={state.debts} subscriptions={state.subscriptions || []} />
 
-      {/* შემოსავალი / გასავალი — Pie Charts */}
+      {/* შემოსავალი / გასავალი — ერთი დიდი რადიალური გრაფიკი */}
       <div className="grid grid-cols-2 gap-2">
         {/* შემოსავალი */}
         <Card className="border-0 bg-emerald-50 dark:bg-emerald-900/20">
@@ -360,33 +360,39 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">შემოსავალი</span>
             </div>
             {totalInc > 0 ? (
-              <div style={{ width: '100%', height: 140 }} className="relative">
+              <div style={{ width: '100%', height: 160 }} className="relative">
                 <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={incomeBreakdown.filter((d) => d.value > 0)}
-                      cx="50%" cy="50%"
-                      innerRadius="45%"
-                      outerRadius="90%"
-                      paddingAngle={2}
+                  <RadialBarChart
+                    cx="50%" cy="50%"
+                    innerRadius="15%" outerRadius="90%"
+                    startAngle={180} endAngle={-180}
+                    data={(() => {
+                      const items = incomeBreakdown.filter((d) => d.value > 0);
+                      const maxVal = Math.max(...items.map((d) => d.value));
+                      return [...items].reverse().map((d) => ({ ...d, fill: d.color, fullMark: maxVal }));
+                    })()}
+                    barSize={Math.max(8, Math.min(18, 80 / Math.max(incomeBreakdown.filter((d) => d.value > 0).length, 1)))}
+                  >
+                    <RadialBar
                       dataKey="value"
-                      strokeWidth={0}
+                      cornerRadius={8}
+                      background={{ fill: 'rgba(0,0,0,0.05)' }}
                       isAnimationActive={true}
                       animationDuration={800}
-                    >
-                      {incomeBreakdown.filter((d) => d.value > 0).map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
+                      label={{ position: 'insideStart', fill: '#fff', fontSize: 9, fontWeight: 700, formatter: (val: unknown) => `${val}₾` }}
+                    />
                     <Tooltip
                       formatter={(val) => [`${val}₾`, '']}
                       labelFormatter={(_, payload) => payload?.[0]?.payload?.label || ''}
                       contentStyle={{ fontSize: 11, borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                     />
-                  </PieChart>
+                  </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-300">{totalInc}₾</span>
+                  <div className="text-center">
+                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{totalInc}₾</p>
+                    <p className="text-[8px] text-emerald-500 dark:text-emerald-400">ჯამი</p>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -413,33 +419,39 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[11px] font-bold text-red-600 dark:text-red-400">გასავალი</span>
             </div>
             {totalExp > 0 ? (
-              <div style={{ width: '100%', height: 140 }} className="relative">
+              <div style={{ width: '100%', height: 160 }} className="relative">
                 <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={expenseBreakdown.filter((d) => d.value > 0)}
-                      cx="50%" cy="50%"
-                      innerRadius="45%"
-                      outerRadius="90%"
-                      paddingAngle={2}
+                  <RadialBarChart
+                    cx="50%" cy="50%"
+                    innerRadius="15%" outerRadius="90%"
+                    startAngle={180} endAngle={-180}
+                    data={(() => {
+                      const items = expenseBreakdown.filter((d) => d.value > 0);
+                      const maxVal = Math.max(...items.map((d) => d.value));
+                      return [...items].reverse().map((d) => ({ ...d, fill: d.color, fullMark: maxVal }));
+                    })()}
+                    barSize={Math.max(8, Math.min(18, 80 / Math.max(expenseBreakdown.filter((d) => d.value > 0).length, 1)))}
+                  >
+                    <RadialBar
                       dataKey="value"
-                      strokeWidth={0}
+                      cornerRadius={8}
+                      background={{ fill: 'rgba(0,0,0,0.05)' }}
                       isAnimationActive={true}
                       animationDuration={800}
-                    >
-                      {expenseBreakdown.filter((d) => d.value > 0).map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
+                      label={{ position: 'insideStart', fill: '#fff', fontSize: 9, fontWeight: 700, formatter: (val: unknown) => `${val}₾` }}
+                    />
                     <Tooltip
                       formatter={(val) => [`${val}₾`, '']}
                       labelFormatter={(_, payload) => payload?.[0]?.payload?.label || ''}
                       contentStyle={{ fontSize: 11, borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                     />
-                  </PieChart>
+                  </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-lg font-black text-red-600 dark:text-red-400">{totalExp}₾</span>
+                  <div className="text-center">
+                    <p className="text-lg font-black text-red-600 dark:text-red-400">{totalExp}₾</p>
+                    <p className="text-[8px] text-red-400">ჯამი</p>
+                  </div>
                 </div>
               </div>
             ) : (
