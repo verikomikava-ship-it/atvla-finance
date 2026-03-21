@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { AppState, UserProfile } from '../types';
+import { AppState, UserProfile, SUBCATEGORIES, ExpenseSubcategory, EXTRA_INCOME_SOURCES } from '../types';
 import { BillAlerts } from './BillAlerts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,69 @@ import {
   Target,
   TrendingUp,
   TrendingDown,
-  CreditCard,
-  Receipt,
-  Repeat,
   Pencil,
   Check,
   X,
   Wallet,
   Settings2,
 } from 'lucide-react';
+
+// SVG Donut Chart
+const DonutChart: React.FC<{ data: { label: string; value: number; percent: number; color: string }[]; size: number }> = ({ data, size }) => {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 4;
+  const innerR = r * 0.55;
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  if (total === 0) {
+    return (
+      <svg width={size} height={size} className="shrink-0">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth={r - innerR} className="text-slate-200 dark:text-slate-700" />
+      </svg>
+    );
+  }
+
+  let cumAngle = -90; // start from top
+  const segments = data.map((d) => {
+    const angle = (d.value / total) * 360;
+    const startAngle = cumAngle;
+    cumAngle += angle;
+    return { ...d, startAngle, angle };
+  });
+
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const arcPath = (startDeg: number, endDeg: number, outerR: number, iR: number) => {
+    const s1 = toRad(startDeg);
+    const e1 = toRad(endDeg);
+    const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+    const x1 = cx + outerR * Math.cos(s1);
+    const y1 = cy + outerR * Math.sin(s1);
+    const x2 = cx + outerR * Math.cos(e1);
+    const y2 = cy + outerR * Math.sin(e1);
+    const x3 = cx + iR * Math.cos(e1);
+    const y3 = cy + iR * Math.sin(e1);
+    const x4 = cx + iR * Math.cos(s1);
+    const y4 = cy + iR * Math.sin(s1);
+    return `M${x1},${y1} A${outerR},${outerR} 0 ${largeArc} 1 ${x2},${y2} L${x3},${y3} A${iR},${iR} 0 ${largeArc} 0 ${x4},${y4} Z`;
+  };
+
+  return (
+    <svg width={size} height={size} className="shrink-0">
+      {segments.map((seg, i) => {
+        const gap = segments.length > 1 ? 0.8 : 0;
+        return (
+          <path
+            key={i}
+            d={arcPath(seg.startAngle + gap, seg.startAngle + seg.angle - gap, r, innerR)}
+            fill={seg.color}
+            className="transition-all duration-300"
+          />
+        );
+      })}
+    </svg>
+  );
+};
 
 interface HeaderProps {
   state: AppState;
@@ -41,27 +95,92 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const currentMonth = parseInt(selectedMonth || '0');
 
-  const { debtsPaid, debtsRemaining, debtsTotal } = useMemo(() => {
-    const paid = state.debts.filter((d) => d.paid).reduce((sum, d) => sum + d.amount, 0);
-    const remaining = state.debts.filter((d) => !d.paid).reduce((sum, d) => sum + d.amount, 0);
-    return { debtsPaid: paid, debtsRemaining: remaining, debtsTotal: paid + remaining };
-  }, [state.debts]);
-
-  const { billsPaid, billsRemaining, billsTotal } = useMemo(() => {
-    const monthBills = state.bills.filter((b) => (b.reset_month ?? 0) === currentMonth);
-    const paid = monthBills.filter((b) => b.paid).reduce((sum, b) => sum + b.amount, 0);
-    const remaining = monthBills.filter((b) => !b.paid).reduce((sum, b) => sum + b.amount, 0);
-    return { billsPaid: paid, billsRemaining: remaining, billsTotal: paid + remaining };
-  }, [state.bills, currentMonth]);
-
-  const { subsPaid, subsRemaining, subsTotal } = useMemo(() => {
-    const monthSubs = (state.subscriptions || []).filter((s) => (s.reset_month ?? 0) === currentMonth);
-    const paid = monthSubs.filter((s) => s.paid).reduce((sum, s) => sum + s.amount, 0);
-    const remaining = monthSubs.filter((s) => !s.paid).reduce((sum, s) => sum + s.amount, 0);
-    return { subsPaid: paid, subsRemaining: remaining, subsTotal: paid + remaining };
-  }, [state.subscriptions, currentMonth]);
 
   const netBalance = totalInc - totalExp;
+
+  // შემოსავლის დაყოფა
+  const incomeBreakdown = useMemo(() => {
+    type ChartItem = { label: string; value: number; percent: number; color: string };
+    const monthDays = Object.entries(state.db).filter(([date]) => {
+      const m = new Date(date).getMonth();
+      return selectedMonth === '' || m === currentMonth;
+    });
+
+    let mainInc = 0;
+    let extraInc = 0;
+    const extraBySource: Record<string, number> = {};
+
+    for (const [, day] of monthDays) {
+      mainInc += day.incMain || 0;
+      if (day.incExtra > 0) {
+        extraInc += day.incExtra;
+        const src = day.incExtraSource || 'სხვა';
+        extraBySource[src] = (extraBySource[src] || 0) + day.incExtra;
+      }
+    }
+
+    const total = mainInc + extraInc;
+    if (total === 0) return [{ label: 'მონაცემები არ არის', value: 0, percent: 100, color: '#d1d5db' }] as ChartItem[];
+
+    const items: ChartItem[] = [];
+    if (mainInc > 0) items.push({ label: 'ძირითადი', value: mainInc, percent: Math.round((mainInc / total) * 100), color: '#10b981' });
+
+    const srcColors: Record<string, string> = {};
+    EXTRA_INCOME_SOURCES.forEach((s) => { srcColors[s.key] = s.color; });
+
+    Object.entries(extraBySource)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([src, val]) => {
+        items.push({ label: src, value: val, percent: Math.round((val / total) * 100), color: srcColors[src] || '#64748b' });
+      });
+
+    return items;
+  }, [state.db, selectedMonth, currentMonth]);
+
+  // გასავლის დაყოფა
+  const expenseBreakdown = useMemo(() => {
+    type ChartItem = { label: string; value: number; percent: number; color: string };
+    const monthDays = Object.entries(state.db).filter(([date]) => {
+      const m = new Date(date).getMonth();
+      return selectedMonth === '' || m === currentMonth;
+    });
+
+    const bySubcategory: Record<string, number> = {};
+    for (const [, day] of monthDays) {
+      for (const exp of day.expenses || []) {
+        const sub = exp.subcategory || 'სხვა';
+        bySubcategory[sub] = (bySubcategory[sub] || 0) + exp.amount;
+      }
+    }
+
+    const total = Object.values(bySubcategory).reduce((s, v) => s + v, 0);
+    if (total === 0) return [{ label: 'მონაცემები არ არის', value: 0, percent: 100, color: '#d1d5db' }] as ChartItem[];
+
+    const subColors: Record<string, string> = {
+      'მაღაზია': '#f59e0b', 'სუპერმარკეტი': '#eab308', 'ბაზარი': '#84cc16',
+      'საწვავი': '#ef4444', 'რესტორანი': '#f97316', 'კაფე': '#d97706',
+      'აფთიაქი': '#ec4899', 'ტრანსპორტი': '#8b5cf6', 'კომუნალური': '#06b6d4',
+      'ჯანმრთელობა': '#14b8a6', 'განათლება': '#3b82f6', 'გართობა': '#a855f7',
+      'ტანისამოსი': '#e11d48', 'ტექნიკა': '#6366f1', 'სახლი': '#0ea5e9',
+      'საჩუქარი': '#f43f5e', 'სილამაზე': '#d946ef', 'სპორტი': '#22c55e',
+      'შინაური ცხოველი': '#a3e635', 'ვალის გადახდა': '#78716c',
+      'ყოველთვიური გადასახადი': '#0891b2', 'სხვა': '#64748b',
+    };
+
+    const items: ChartItem[] = Object.entries(bySubcategory)
+      .sort((a, b) => b[1] - a[1])
+      .map(([sub, val]) => {
+        const info = SUBCATEGORIES[sub as ExpenseSubcategory];
+        return {
+          label: info ? `${info.icon} ${info.label}` : sub,
+          value: val,
+          percent: Math.round((val / total) * 100),
+          color: subColors[sub] || '#64748b',
+        };
+      });
+
+    return items;
+  }, [state.db, selectedMonth, currentMonth]);
 
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
@@ -282,56 +401,50 @@ export const Header: React.FC<HeaderProps> = ({
 
       <BillAlerts bills={state.bills} debts={state.debts} subscriptions={state.subscriptions || []} />
 
-      {/* სტატ ბოქსები - კომპაქტური */}
-      <div className="grid grid-cols-5 gap-2 text-center">
+      {/* შემოსავალი / გასავალი — Donut Charts */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* შემოსავალი */}
         <Card className="border-0 bg-emerald-50 dark:bg-emerald-900/20">
           <CardContent className="p-2">
-            <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400 mx-auto mb-0.5" />
-            <p className="text-emerald-700 dark:text-emerald-300 font-bold text-sm">{totalInc}₾</p>
-            <p className="text-emerald-500 dark:text-emerald-400 text-[10px]">შემოსავალი</p>
+            <div className="flex items-center gap-1 mb-1">
+              <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">შემოსავალი</span>
+              <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 ml-auto">{totalInc}₾</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <DonutChart data={incomeBreakdown} size={72} />
+              <div className="flex-1 space-y-0.5">
+                {incomeBreakdown.map((item, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px]">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-slate-600 dark:text-slate-400 truncate flex-1">{item.label}</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">{item.percent}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
+        {/* გასავალი */}
         <Card className="border-0 bg-red-50 dark:bg-red-900/20">
           <CardContent className="p-2">
-            <TrendingDown className="h-3 w-3 text-red-500 mx-auto mb-0.5" />
-            <p className="text-red-600 dark:text-red-400 font-bold text-sm">{totalExp}₾</p>
-            <p className="text-red-400 text-[10px]">გასავალი</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-purple-50 dark:bg-purple-900/20">
-          <CardContent className="p-2">
-            <CreditCard className="h-3 w-3 text-purple-500 mx-auto mb-0.5" />
-            <p className="text-purple-700 dark:text-purple-300 font-bold text-xs">{debtsTotal}₾</p>
-            <p className="text-purple-500 text-[10px] mb-1">ვალები</p>
-            <div className="text-[10px] flex justify-between">
-              <span className="text-purple-600 dark:text-purple-400 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{debtsPaid}₾</span>
-              <span className="text-purple-400">{debtsRemaining}₾</span>
+            <div className="flex items-center gap-1 mb-1">
+              <TrendingDown className="h-3 w-3 text-red-500" />
+              <span className="text-[11px] font-bold text-red-600 dark:text-red-400">გასავალი</span>
+              <span className="text-xs font-black text-red-600 dark:text-red-400 ml-auto">{totalExp}₾</span>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-blue-50 dark:bg-blue-900/20">
-          <CardContent className="p-2">
-            <Receipt className="h-3 w-3 text-blue-500 mx-auto mb-0.5" />
-            <p className="text-blue-700 dark:text-blue-300 font-bold text-xs">{billsTotal}₾</p>
-            <p className="text-blue-500 text-[10px] mb-1">ბილები</p>
-            <div className="text-[10px] flex justify-between">
-              <span className="text-blue-600 dark:text-blue-400 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{billsPaid}₾</span>
-              <span className="text-blue-400">{billsRemaining}₾</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-teal-50 dark:bg-teal-900/20">
-          <CardContent className="p-2">
-            <Repeat className="h-3 w-3 text-teal-500 mx-auto mb-0.5" />
-            <p className="text-teal-700 dark:text-teal-300 font-bold text-xs">{subsTotal}₾</p>
-            <p className="text-teal-500 text-[10px] mb-1">გამოწერები</p>
-            <div className="text-[10px] flex justify-between">
-              <span className="text-teal-600 dark:text-teal-400 flex items-center gap-px"><Check className="h-2.5 w-2.5" />{subsPaid}₾</span>
-              <span className="text-teal-400">{subsRemaining}₾</span>
+            <div className="flex items-center gap-2">
+              <DonutChart data={expenseBreakdown} size={72} />
+              <div className="flex-1 space-y-0.5 max-h-[90px] overflow-y-auto">
+                {expenseBreakdown.map((item, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px]">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-slate-600 dark:text-slate-400 truncate flex-1">{item.label}</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">{item.percent}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
