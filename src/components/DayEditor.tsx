@@ -381,7 +381,23 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
   const dailyPlan: DailyPlanEntry[] = date ? getDailyPlan(state, date) : [];
   const dailyPlanTotal = dailyPlan.reduce((s, p) => s + p.dailyAmount, 0);
 
-  const toggleDailyPlanItem = (entry: DailyPlanEntry, payFull?: boolean) => {
+  // ჭკვიანი წინსწრებით გადახდის თანხის გამოთვლა
+  const getSmartExtraAmount = (entry: DailyPlanEntry): number => {
+    const currentExpenses = getExpensesTotal(formData);
+    const surplus = income - currentExpenses - dailyPlanTotal; // დარჩენილი თანხა გეგმის შემდეგ
+
+    if (entry.targetType === 'debt') {
+      // ვალი: შემოთავაზე ნამეტის 10% — წინსწრებით ძირის დაფარვა
+      const extra = Math.round(Math.max(0, surplus) * 0.10);
+      return Math.min(extra, entry.remaining - entry.dailyAmount); // არ გადააჭარბოს დარჩენილს
+    } else {
+      // ბილი/გამოწერა: ხარჯვის ლიმიტის 7% — პროცენტის დაფარვა
+      const extra = Math.round(dailyBudget * 0.07);
+      return Math.min(extra, entry.remaining - entry.dailyAmount);
+    }
+  };
+
+  const toggleDailyPlanItem = (entry: DailyPlanEntry, extraAmount?: number) => {
     setFormData((prev) => {
       const existing = prev.dailyPlanDone || [];
       const found = existing.find(
@@ -396,8 +412,8 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
           ),
         };
       } else {
-        // დამატება — დღიური ან სრული თანხა
-        const amount = payFull ? entry.remaining : entry.dailyAmount;
+        // დამატება — დღიური + დამატებითი თანხა (თუ წინსწრებით იხდის)
+        const amount = entry.dailyAmount + (extraAmount || 0);
         return {
           ...prev,
           dailyPlanDone: [
@@ -893,7 +909,8 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                     (d) => d.targetId === entry.targetId && d.targetType === entry.targetType
                   );
                   const savedAmount = savedItem?.amount || 0;
-                  const isPaidFull = checked && savedAmount >= entry.remaining;
+                  const smartExtra = getSmartExtraAmount(entry);
+                  const smartTotal = entry.dailyAmount + smartExtra;
                   const typeColors: Record<string, string> = {
                     bill: 'border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20',
                     debt: 'border-red-400 bg-red-50 dark:bg-red-900/20',
@@ -934,20 +951,22 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                           <p className={cn('text-sm font-black', checked ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-700 dark:text-indigo-300')}>
                             {checked ? savedAmount : entry.dailyAmount}₾
                           </p>
-                          <p className="text-[8px] text-muted-foreground">{isPaidFull ? 'სრულად' : 'დღეს'}</p>
+                          <p className="text-[8px] text-muted-foreground">{checked && savedAmount > entry.dailyAmount ? `+${savedAmount - entry.dailyAmount}₾ წინსწრ.` : 'დღეს'}</p>
                         </div>
                       </button>
-                      {/* სრულად გადახდა ღილაკი */}
-                      {!checked && entry.remaining > entry.dailyAmount && (
+                      {/* წინსწრებით დაფარვის ღილაკი — ჭკვიანი თანხით */}
+                      {!checked && smartExtra > 0 && (
                         <button
                           type="button"
-                          onClick={() => toggleDailyPlanItem(entry, true)}
-                          className="shrink-0 px-1.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
-                          title="სრულად გადახდა"
+                          onClick={() => toggleDailyPlanItem(entry, smartExtra)}
+                          className="shrink-0 px-1.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-[9px] font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                          title={entry.targetType === 'debt'
+                            ? `წინსწრებით: +${smartExtra}₾ (ნამეტის 10%)`
+                            : `წინსწრებით: +${smartExtra}₾ (ბიუჯეტის 7%)`}
                         >
-                          {entry.remaining}₾
+                          {smartTotal}₾
                           <br />
-                          <span className="text-[7px] font-normal">სრულად</span>
+                          <span className="text-[7px] font-normal">+{smartExtra}₾</span>
                         </button>
                       )}
                     </div>
