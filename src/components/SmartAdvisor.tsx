@@ -442,6 +442,282 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
       });
     }
 
+    // === ახალი ჭკვიანი ანალიტიკა ===
+
+    // 1. Net Worth — წმინდა ღირებულება
+    const totalBankLoanDebt = (state.bankLoans || [])
+      .filter((l) => l.active)
+      .reduce((s, l) => s + l.principal, 0);
+    const totalLombardDebt = (state.lombards || [])
+      .filter((l) => l.active)
+      .reduce((s, l) => s + l.principal, 0);
+    const netWorth = totalKulaba - totalDebt - totalBankLoanDebt - totalLombardDebt;
+
+    // 2. Burn Rate — ხარჯვის სიჩქარე
+    const targetDailyRate = totalMonthlyIncome > 0 ? Math.round(totalMonthlyIncome / daysInMonth) : 0;
+    const burnRateRatio = targetDailyRate > 0 ? avgDailyExpense / targetDailyRate : 0;
+    const burnRateStatus: 'fast' | 'normal' | 'slow' =
+      burnRateRatio > 1.2 ? 'fast' : burnRateRatio < 0.8 ? 'slow' : 'normal';
+
+    // 3. Spending Streaks — ხარჯვის სტრიქები
+    let currentStreak = 0;
+    let bestStreak = 0;
+    let tempStreak = 0;
+    let kulabaStreak = 0;
+    let tempKulabaStreak = 0;
+    for (let i = 0; i < 90; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const data = state.db[key];
+      if (data) {
+        const dayExp = getExpensesTotal(data);
+        if (dayExp <= dailyBudget) {
+          tempStreak++;
+          if (i === currentStreak) currentStreak = tempStreak;
+        } else {
+          tempStreak = 0;
+        }
+        bestStreak = Math.max(bestStreak, tempStreak);
+
+        if ((data.kulaba || 0) > 0) {
+          tempKulabaStreak++;
+          if (i < 30) kulabaStreak = tempKulabaStreak;
+        } else {
+          tempKulabaStreak = 0;
+        }
+      } else {
+        tempStreak = 0;
+        tempKulabaStreak = 0;
+      }
+    }
+
+    // 4. Top 3 Money Drains — 3 ყველაზე დიდი ხარჯი
+    const subcatRanking = Object.entries(subcatTotals30)
+      .map(([name, s]) => ({ name, total: s.total, count: s.count }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3);
+
+    // 5. Weekend vs Weekday — შაბათ-კვირა vs სამუშაო
+    let weekdayTotal = 0, weekdayCount = 0, weekendTotal = 0, weekendCount = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const data = state.db[key];
+      if (data) {
+        const dayExp = getExpensesTotal(data);
+        const dow = d.getDay();
+        if (dow === 0 || dow === 6) {
+          weekendTotal += dayExp;
+          weekendCount++;
+        } else {
+          weekdayTotal += dayExp;
+          weekdayCount++;
+        }
+      }
+    }
+    const avgWeekday = weekdayCount > 0 ? Math.round(weekdayTotal / weekdayCount) : 0;
+    const avgWeekend = weekendCount > 0 ? Math.round(weekendTotal / weekendCount) : 0;
+    const weekendPremium = avgWeekday > 0 ? Math.round(((avgWeekend - avgWeekday) / avgWeekday) * 100) : 0;
+
+    // 6. Latte Factor — პატარა ყოველდღიური ხარჯები
+    const latteFactor: { name: string; dailyAvg: number; yearlyTotal: number }[] = [];
+    for (const [name, s] of Object.entries(subcatTotals30)) {
+      if (s.count >= 5 && s.total / s.count < 15) {
+        const dailyAvg = Math.round(s.total / 30);
+        if (dailyAvg > 0) {
+          latteFactor.push({ name, dailyAvg, yearlyTotal: dailyAvg * 365 });
+        }
+      }
+    }
+
+    // 7. Financial Independence — ფინანსური დამოუკიდებლობა
+    const monthlyFullExpenses = monthlyLivingExpenses + billsTotal + subsTotal + monthlyDebtPayment;
+    const fiMonths = monthlyFullExpenses > 0 ? totalKulaba / monthlyFullExpenses : 0;
+    const fiLabel = fiMonths >= 6 ? '6+ თვე' : fiMonths >= 3 ? '3-6 თვე' : fiMonths >= 1 ? '1-3 თვე' : fiMonths >= (7 / 30) ? '1 კვირა+' : 'არ აქვს';
+
+    // 8. Adaptive Budget — ადაპტიური ბიუჯეტი
+    // ბოლო 7 დღის ხარჯი vs ბიუჯეტი
+    let last7Expenses = 0, last7Days = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const data = state.db[key];
+      if (data) {
+        last7Expenses += getExpensesTotal(data);
+        last7Days++;
+      }
+    }
+    const last7Avg = last7Days > 0 ? Math.round(last7Expenses / last7Days) : 0;
+    const adaptiveBudget = Math.round(dailyBudget + (dailyBudget - last7Avg) * 0.5);
+    const cappedAdaptive = Math.max(Math.round(dailyBudget * 0.7), Math.min(Math.round(dailyBudget * 1.3), adaptiveBudget));
+
+    // 9. Category Drift — კატეგორიის ცვლილება (ეს თვე vs წინა)
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const catThisMonth: Record<string, number> = {};
+    const catPrevMonth: Record<string, number> = {};
+    Object.entries(state.db).forEach(([date, day]) => {
+      const dm = new Date(date).getMonth();
+      for (const exp of day.expenses || []) {
+        const sub = exp.subcategory || 'სხვა';
+        if (dm === month) catThisMonth[sub] = (catThisMonth[sub] || 0) + exp.amount;
+        if (dm === prevMonth) catPrevMonth[sub] = (catPrevMonth[sub] || 0) + exp.amount;
+      }
+    });
+    const categoryDrifts: { name: string; change: number; thisMonth: number; prevMonth: number }[] = [];
+    for (const [name, amount] of Object.entries(catThisMonth)) {
+      const prev = catPrevMonth[name] || 0;
+      if (prev > 0) {
+        const change = Math.round(((amount - prev) / prev) * 100);
+        if (Math.abs(change) > 30 && amount > 20) {
+          categoryDrifts.push({ name, change, thisMonth: amount, prevMonth: prev });
+        }
+      }
+    }
+    categoryDrifts.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+
+    // 10. Kulaba Velocity — დანაზოგის სიჩქარე და მიზნის ETA
+    let kulabaLast30 = 0;
+    let kulabaDaysWithData = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      const data = state.db[key];
+      if (data && (data.kulaba || 0) > 0) {
+        kulabaLast30 += data.kulaba;
+        kulabaDaysWithData++;
+      }
+    }
+    const avgDailyKulaba = kulabaDaysWithData > 0 ? kulabaLast30 / kulabaDaysWithData : 0;
+    const goalRemaining = Math.max(0, state.goal - totalKulaba);
+    const daysToGoal = avgDailyKulaba > 0 ? Math.ceil(goalRemaining / avgDailyKulaba) : 999;
+
+    // 11. Expense Elasticity — ფიქსირებული vs ცვალებადი
+    const fixedExpenses = billsTotal + subsTotal + monthlyDebtPayment;
+    const variableExpenses = monthlyLivingExpenses;
+    const totalExpForElasticity = fixedExpenses + variableExpenses;
+    const flexibilityRatio = totalExpForElasticity > 0 ? Math.round((variableExpenses / totalExpForElasticity) * 100) : 50;
+
+    // 12. Lombard Cost Visibility
+    const lombardInsights: { name: string; totalPaid: number; principal: number; costRatio: number }[] = [];
+    for (const l of state.lombards || []) {
+      if (!l.active) continue;
+      const paidBills = l.billIds.map(id => state.bills.find(b => b.id === id)).filter(b => b?.paid);
+      const totalInterestPaid = paidBills.reduce((s, b) => s + (b?.amount || 0), 0);
+      if (totalInterestPaid > 0) {
+        lombardInsights.push({
+          name: l.itemName,
+          totalPaid: totalInterestPaid,
+          principal: l.principal,
+          costRatio: Math.round((totalInterestPaid / l.principal) * 100),
+        });
+      }
+    }
+
+    // 13. Subscription Annual View
+    const subsAnnualCost = (state.subscriptions || [])
+      .filter(s => !s.paid || true) // ყველა გამოწერა
+      .reduce((s, sub) => s + sub.amount * 12, 0);
+
+    // === ახალი ინსაითები ===
+
+    // Burn Rate
+    if (burnRateStatus === 'fast' && avgDailyExpense > 0) {
+      insights.push({
+        level: 'warning', icon: '🔥',
+        title: `ხარჯავ ძალიან სწრაფად!`,
+        message: `${avgDailyExpense}₾/დღე (ნორმა: ${targetDailyRate}₾). ამ ტემპით თვის ბოლომდე ვერ მიაღწევ.`,
+      });
+    }
+
+    // Weekend premium
+    if (weekendPremium > 40 && avgWeekend > 20) {
+      insights.push({
+        level: 'info', icon: '📅',
+        title: `შაბათ-კვირა ${weekendPremium}%-ით ძვირი`,
+        message: `სამუშაო: ${avgWeekday}₾ · შაბათ-კვირა: ${avgWeekend}₾/დღე`,
+      });
+    }
+
+    // Latte factor
+    for (const lf of latteFactor.slice(0, 1)) {
+      insights.push({
+        level: 'info', icon: '☕',
+        title: `${lf.name}: ${lf.dailyAvg}₾/დღე = ${lf.yearlyTotal}₾/წელი`,
+        message: `ეს პატარა ხარჯი წელიწადში ${lf.yearlyTotal}₾ ჯდება.`,
+      });
+    }
+
+    // Category drift
+    for (const drift of categoryDrifts.slice(0, 1)) {
+      insights.push({
+        level: drift.change > 0 ? 'warning' : 'success',
+        icon: drift.change > 0 ? '📈' : '📉',
+        title: `${drift.name}: ${drift.change > 0 ? '+' : ''}${drift.change}% ცვლილება`,
+        message: `ეს თვე: ${drift.thisMonth}₾ · წინა: ${drift.prevMonth}₾`,
+      });
+    }
+
+    // Kulaba velocity
+    if (state.goal > 0 && totalKulaba > 0 && daysToGoal < 999 && daysToGoal > 0) {
+      const eta = new Date();
+      eta.setDate(eta.getDate() + daysToGoal);
+      insights.push({
+        level: 'info', icon: '🏺',
+        title: `მიზანი: ${daysToGoal} დღეში (${eta.toLocaleDateString('ka-GE', { month: 'short', day: 'numeric' })})`,
+        message: `${totalKulaba}₾ / ${state.goal}₾ · საშუალო: ${Math.round(avgDailyKulaba)}₾/დღე`,
+      });
+    }
+
+    // Spending streaks
+    if (currentStreak >= 3) {
+      insights.push({
+        level: 'success', icon: '🔥',
+        title: `${currentStreak} დღე ბიუჯეტში! ${currentStreak >= bestStreak ? '🏆 რეკორდი!' : `(რეკ: ${bestStreak})`}`,
+        message: kulabaStreak > 0 ? `ასევე ${kulabaStreak} დღე ზედიზედ ზოგავ!` : 'გააგრძელე ასე!',
+      });
+    }
+
+    // Lombard cost warning
+    for (const li of lombardInsights) {
+      if (li.costRatio >= 80) {
+        insights.push({
+          level: 'critical', icon: '🏪',
+          title: `${li.name}: პროცენტი = ძირის ${li.costRatio}%!`,
+          message: `გადახდილი: ${li.totalPaid}₾ · ძირი: ${li.principal}₾. განიხილე გამოსყიდვა.`,
+        });
+      }
+    }
+
+    // Flexibility warning
+    if (flexibilityRatio < 25 && totalExpForElasticity > 0) {
+      insights.push({
+        level: 'warning', icon: '🔒',
+        title: `ხარჯების ${100 - flexibilityRatio}% ფიქსირებულია`,
+        message: `მხოლოდ ${flexibilityRatio}% შეგიძლია შეამცირო. ფიქსირებული: ${fixedExpenses}₾/თვე.`,
+      });
+    }
+
+    // Adaptive budget suggestion
+    if (last7Avg > 0 && Math.abs(cappedAdaptive - dailyBudget) > 5) {
+      if (cappedAdaptive > dailyBudget) {
+        insights.push({
+          level: 'success', icon: '💪',
+          title: `ბონუს ბიუჯეტი: ${cappedAdaptive}₾ დღეს`,
+          message: `კარგად ზოგავდი — +${cappedAdaptive - dailyBudget}₾ ბონუსი ნორმალურ ${dailyBudget}₾-ს.`,
+        });
+      } else {
+        insights.push({
+          level: 'warning', icon: '📉',
+          title: `შემცირებული ბიუჯეტი: ${cappedAdaptive}₾ დღეს`,
+          message: `ბოლო 7 დღე ზედმეტად ხარჯავდი. ნორმა ${dailyBudget}₾ → ${cappedAdaptive}₾.`,
+        });
+      }
+    }
+
     return {
       totalMonthlyIncome, monthlySalary, monthlyDailyIncome, monthlyAdditional,
       billsTotal, subsTotal, monthlyDebtPayment, monthlyLivingExpenses,
@@ -449,6 +725,15 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
       healthScore, inMyPocket, dailySafeSpend, daysRemaining,
       needsPercent, wantsPercent, savingsPercent,
       insights,
+      // ახალი მონაცემები UI-სთვის
+      netWorth, burnRateRatio, burnRateStatus,
+      currentStreak, bestStreak, kulabaStreak,
+      subcatRanking, avgWeekday, avgWeekend, weekendPremium,
+      fiMonths, fiLabel,
+      cappedAdaptive, dailyBudget,
+      flexibilityRatio, fixedExpenses, variableExpenses,
+      subsAnnualCost, totalKulaba, goalRemaining, daysToGoal,
+      latteFactor, categoryDrifts, lombardInsights,
     };
   }, [state, selectedMonth]);
 
@@ -590,6 +875,106 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* ახალი მეტრიკები — Net Worth, Burn Rate, Streaks, FI */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {/* Net Worth */}
+            <div className="rounded-xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/20 p-2 text-center border border-slate-200 dark:border-slate-700">
+              <p className="text-[7px] text-muted-foreground mb-0.5">💎 წმინდა ღირ.</p>
+              <p className={cn('text-xs font-black', a.netWorth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                {a.netWorth >= 0 ? '' : '-'}{Math.abs(a.netWorth)}₾
+              </p>
+            </div>
+            {/* Burn Rate */}
+            <div className={cn('rounded-xl p-2 text-center border',
+              a.burnRateStatus === 'fast' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+              : a.burnRateStatus === 'slow' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
+              : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700')}>
+              <p className="text-[7px] text-muted-foreground mb-0.5">
+                {a.burnRateStatus === 'fast' ? '🔥' : a.burnRateStatus === 'slow' ? '🐢' : '⚡'} ტემპი
+              </p>
+              <p className={cn('text-xs font-black',
+                a.burnRateStatus === 'fast' ? 'text-red-600 dark:text-red-400'
+                : a.burnRateStatus === 'slow' ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-blue-600 dark:text-blue-400')}>
+                {Math.round(a.burnRateRatio * 100)}%
+              </p>
+            </div>
+            {/* Streaks */}
+            <div className="rounded-xl bg-gradient-to-b from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 p-2 text-center border border-amber-200 dark:border-amber-700">
+              <p className="text-[7px] text-muted-foreground mb-0.5">🔥 სტრიქი</p>
+              <p className="text-xs font-black text-amber-600 dark:text-amber-400">{a.currentStreak} დღე</p>
+            </div>
+            {/* FI */}
+            <div className={cn('rounded-xl p-2 text-center border',
+              a.fiMonths >= 1 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
+              : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700')}>
+              <p className="text-[7px] text-muted-foreground mb-0.5">🛡️ ბუფერი</p>
+              <p className={cn('text-xs font-black', a.fiMonths >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400')}>
+                {a.fiLabel}
+              </p>
+            </div>
+          </div>
+
+          {/* Top 3 ხარჯი + Weekend/Weekday */}
+          {a.subcatRanking.length > 0 && (
+            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-rose-50 dark:from-slate-800/40 dark:to-rose-900/10 p-2.5 border border-slate-200 dark:border-slate-700">
+              <p className="text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">🏆 ტოპ 3 ხარჯი (30 დღე)</p>
+              <div className="space-y-1">
+                {a.subcatRanking.map((item, i) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-slate-400 w-4">{i + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between text-[10px]">
+                        <span className="font-bold truncate">{item.name}</span>
+                        <span className="font-black text-rose-600 dark:text-rose-400">{item.total}₾</span>
+                      </div>
+                      <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mt-0.5">
+                        <div
+                          className="h-full rounded-full bg-rose-400 dark:bg-rose-500"
+                          style={{ width: `${a.subcatRanking[0] ? Math.round((item.total / a.subcatRanking[0].total) * 100) : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {a.weekendPremium !== 0 && (a.avgWeekday > 0 || a.avgWeekend > 0) && (
+                <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 flex justify-between text-[9px]">
+                  <span className="text-muted-foreground">📊 სამუშაო: {a.avgWeekday}₾/დღე</span>
+                  <span className={cn('font-bold', a.weekendPremium > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                    შაბ-კვ: {a.avgWeekend}₾ ({a.weekendPremium > 0 ? '+' : ''}{a.weekendPremium}%)
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Flexibility Bar — ფიქსირებული vs ცვალებადი */}
+          {a.fixedExpenses + a.variableExpenses > 0 && (
+            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-purple-50 dark:from-slate-800/40 dark:to-purple-900/10 p-2.5 border border-slate-200 dark:border-slate-700">
+              <div className="flex justify-between text-[9px] mb-1">
+                <span className="font-bold text-slate-600 dark:text-slate-400">🔒 ფიქსირებული: {a.fixedExpenses}₾</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400">🔄 ცვალებადი: {a.variableExpenses}₾</span>
+              </div>
+              <div className="flex h-2 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                <div className="bg-slate-500 dark:bg-slate-400" style={{ width: `${100 - a.flexibilityRatio}%` }} />
+                <div className="bg-purple-500 dark:bg-purple-400" style={{ width: `${a.flexibilityRatio}%` }} />
+              </div>
+              <p className="text-[8px] text-center text-muted-foreground mt-0.5">
+                {a.flexibilityRatio < 30 ? '⚠️ მხოლოდ ' : ''}
+                {a.flexibilityRatio}% შეგიძლია შეამცირო
+              </p>
+            </div>
+          )}
+
+          {/* გამოწერების წლიური ღირებულება */}
+          {a.subsAnnualCost > 0 && (
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700">
+              <span className="text-[9px] text-violet-600 dark:text-violet-400 font-bold">🔄 გამოწერები წელიწადში:</span>
+              <span className="text-sm font-black text-violet-700 dark:text-violet-300">{a.subsAnnualCost}₾</span>
+            </div>
           )}
 
           {/* ინსაითები */}

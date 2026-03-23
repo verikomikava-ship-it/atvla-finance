@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AppState, DayData, Expense, ExpenseCategory, ExpenseSubcategory, SUBCATEGORIES, SUBCATEGORY_LIST, UtilityType, UTILITY_TYPES, EXTRA_INCOME_SOURCES } from '../types';
 import { calculateBalance, getExpensesTotal, getDailyTargetForDate, getAverageDailyExpenses, calculateDebtRepaymentPlan, getDailyPlan, DailyPlanEntry } from '../utils/calculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,6 +79,30 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
   const currentBillMonth = date ? new Date(date + 'T00:00:00').getMonth() : new Date().getMonth();
   const unpaidBills = state.bills.filter((b) => !b.paid && (b.reset_month ?? 0) === currentBillMonth);
 
+  // ავტო-კატეგორიზაცია: ისტორიიდან ისწავლი რომელ კატეგორიას იყენებს ყველაზე ხშირად
+  const categoryMap = useMemo(() => {
+    const map: Record<string, { sub: ExpenseSubcategory; count: number }> = {};
+    Object.values(state.db).forEach((day) => {
+      for (const exp of day.expenses || []) {
+        if (exp.subcategory && exp.name) {
+          const key = exp.name.toLowerCase().trim();
+          if (!map[key]) map[key] = { sub: exp.subcategory, count: 0 };
+          map[key].count++;
+          if (exp.subcategory !== map[key].sub) {
+            // უფრო ხშირი იგებს
+            const existing = map[key];
+            map[key] = existing.count > 1 ? existing : { sub: exp.subcategory, count: 1 };
+          }
+        }
+      }
+    });
+    return map;
+  }, [state.db]);
+
+  // Round-up: ხარჯების ჯამიდან 10-ზე დამრგვალება — რამდენი უნდა კულაბაში
+  const expensesTotal = getExpensesTotal(formData);
+  const roundUpAmount = expensesTotal > 0 ? Math.ceil(expensesTotal / 10) * 10 - expensesTotal : 0;
+
   // Escape-ით დახურვა
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -114,9 +138,21 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
   const updateExpense = (id: number, field: keyof Expense, value: string | number | ExpenseCategory) => {
     setFormData((prev) => ({
       ...prev,
-      expenses: prev.expenses.map((e) =>
-        e.id === id ? { ...e, [field]: value } : e
-      ),
+      expenses: prev.expenses.map((e) => {
+        if (e.id !== id) return e;
+        const updated = { ...e, [field]: value };
+        // ავტო-კატეგორიზაცია: თუ სახელს ცვლის და ისტორიაში არის შესაბამისი კატეგორია
+        if (field === 'name' && typeof value === 'string') {
+          const key = value.toLowerCase().trim();
+          const match = categoryMap[key];
+          if (match && match.count >= 2 && match.sub !== e.subcategory) {
+            const info = SUBCATEGORIES[match.sub];
+            updated.subcategory = match.sub;
+            updated.category = info.defaultCategory;
+          }
+        }
+        return updated;
+      }),
     }));
   };
 
@@ -987,6 +1023,18 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                 onChange={(e) => handleChange('kulaba', Math.max(0, +e.target.value))}
                 className="flex-1 h-7 text-xs border-amber-200 dark:border-amber-700 focus-visible:ring-amber-500"
               />
+              {/* Round-Up შეთავაზება */}
+              {roundUpAmount > 0 && !formData.kulaba && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleChange('kulaba', roundUpAmount)}
+                  className="text-[9px] font-bold h-7 px-1.5 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                  title={`ხარჯი ${expensesTotal}₾ → დამრგვალება ${expensesTotal + roundUpAmount}₾`}
+                >
+                  +{roundUpAmount}₾
+                </Button>
+              )}
               {availableForKulaba > 0 && (
                 <>
                   <span className="text-[9px] text-amber-600 dark:text-amber-400">{availableForKulaba}₾</span>
@@ -1001,6 +1049,11 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                 </>
               )}
             </div>
+            {roundUpAmount > 0 && !formData.kulaba && (
+              <p className="text-[8px] text-amber-600/70 dark:text-amber-400/70 ml-7 mt-0.5">
+                💡 დამრგვალე {expensesTotal}₾ → {expensesTotal + roundUpAmount}₾ · +{roundUpAmount}₾ = {roundUpAmount * 365}₾/წელი
+              </p>
+            )}
           </div>
 
           {/* დღიური — მობილურზე */}
