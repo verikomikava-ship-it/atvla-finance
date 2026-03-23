@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, DayData, Expense, ExpenseCategory, ExpenseSubcategory, SUBCATEGORIES, SUBCATEGORY_LIST, UtilityType, UTILITY_TYPES, EXTRA_INCOME_SOURCES } from '../types';
-import { calculateBalance, getExpensesTotal, getDailyTargetForDate, getAverageDailyExpenses, calculateDebtRepaymentPlan } from '../utils/calculations';
+import { calculateBalance, getExpensesTotal, getDailyTargetForDate, getAverageDailyExpenses, calculateDebtRepaymentPlan, getDailyPlan, DailyPlanEntry } from '../utils/calculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -376,6 +376,43 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
   const dateObj = new Date(date + 'T00:00:00');
   const weekDays = ['კვირა', 'ორშაბათი', 'სამშაბათი', 'ოთხშაბათი', 'ხუთშაბათი', 'პარასკევი', 'შაბათი'];
   const displayDate = `${dateObj.getDate()} - ${weekDays[dateObj.getDay()]}`;
+
+  // დღიური გეგმა — რამდენი უნდა გადადო ყოველდღე თითოეული გადასახადისთვის
+  const dailyPlan: DailyPlanEntry[] = date ? getDailyPlan(state, date) : [];
+  const dailyPlanTotal = dailyPlan.reduce((s, p) => s + p.dailyAmount, 0);
+
+  const toggleDailyPlanItem = (entry: DailyPlanEntry) => {
+    setFormData((prev) => {
+      const existing = prev.dailyPlanDone || [];
+      const found = existing.find(
+        (d) => d.targetId === entry.targetId && d.targetType === entry.targetType
+      );
+      if (found) {
+        // წაშლა
+        return {
+          ...prev,
+          dailyPlanDone: existing.filter(
+            (d) => !(d.targetId === entry.targetId && d.targetType === entry.targetType)
+          ),
+        };
+      } else {
+        // დამატება
+        return {
+          ...prev,
+          dailyPlanDone: [
+            ...existing,
+            { targetId: entry.targetId, targetType: entry.targetType, amount: entry.dailyAmount },
+          ],
+        };
+      }
+    });
+  };
+
+  const isDailyPlanChecked = (entry: DailyPlanEntry): boolean => {
+    return (formData.dailyPlanDone || []).some(
+      (d) => d.targetId === entry.targetId && d.targetType === entry.targetType
+    );
+  };
 
   // კულაბაში მაქსიმუმ რამდენი შეიძლება ჩაიდოს (ბალანსი კულაბის გარეშე)
   const availableForKulaba = income - getExpensesTotal(formData);
@@ -835,6 +872,67 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
               ხარჯის დამატება
             </Button>
           </div>
+
+          {/* დღიური გეგმა — რა უნდა გადადო დღეს */}
+          {dailyPlan.length > 0 && (
+            <div className="rounded-2xl border border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/10 overflow-hidden">
+              <div className="px-2.5 py-1.5 flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-700/60">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">📋</span>
+                  <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">დღიური გეგმა</span>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                  {(formData.dailyPlanDone || []).reduce((s, d) => s + d.amount, 0)}₾ / {dailyPlanTotal}₾
+                </span>
+              </div>
+              <div className="p-1.5 space-y-1">
+                {dailyPlan.map((entry) => {
+                  const checked = isDailyPlanChecked(entry);
+                  const typeColors: Record<string, string> = {
+                    bill: 'border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20',
+                    debt: 'border-red-400 bg-red-50 dark:bg-red-900/20',
+                    subscription: 'border-violet-400 bg-violet-50 dark:bg-violet-900/20',
+                  };
+                  return (
+                    <button
+                      key={`${entry.targetType}-${entry.targetId}`}
+                      type="button"
+                      onClick={() => toggleDailyPlanItem(entry)}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-2 py-1.5 rounded-xl border transition-all text-left',
+                        checked
+                          ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 opacity-60'
+                          : typeColors[entry.targetType] || 'border-slate-200 bg-white dark:bg-slate-800'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all',
+                        checked ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 dark:border-slate-600'
+                      )}>
+                        {checked && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className="text-xs">{entry.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn('text-[11px] font-bold truncate', checked && 'line-through text-muted-foreground')}>
+                          {entry.name}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">
+                          {entry.daysLeft} დღე დარჩა · {entry.alreadySaved > 0 && `${entry.alreadySaved}₾ გადადებულია · `}
+                          {entry.remaining}₾ სულ
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={cn('text-sm font-black', checked ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-700 dark:text-indigo-300')}>
+                          {entry.dailyAmount}₾
+                        </p>
+                        <p className="text-[8px] text-muted-foreground">დღეს</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* კულაბა */}
           <div className="px-2.5 py-2 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-700">

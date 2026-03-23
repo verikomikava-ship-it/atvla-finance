@@ -267,3 +267,137 @@ export const getAverageDailyExpenses = (db: Record<string, DayData>): number => 
 
   return daysWithData > 0 ? Math.round(totalExpenses / daysWithData) : 0;
 };
+
+// დღიური გეგმის გამოთვლა — რამდენი უნდა გადადო ყოველდღე თითოეული გადასახადისთვის
+export type DailyPlanEntry = {
+  targetId: number;
+  targetType: 'bill' | 'debt' | 'subscription';
+  name: string;
+  totalAmount: number;
+  alreadySaved: number;
+  remaining: number;
+  daysLeft: number;
+  dailyAmount: number;
+  dueDate: string;
+  icon: string;
+};
+
+export const getDailyPlan = (state: AppState, dateStr: string): DailyPlanEntry[] => {
+  const today = new Date(dateStr);
+  today.setHours(0, 0, 0, 0);
+  const plans: DailyPlanEntry[] = [];
+
+  // რამდენი უკვე გადადებულია ამ target-ისთვის (dateStr-მდე ჩათვლით)
+  const getSaved = (targetId: number, targetType: string): number => {
+    let saved = 0;
+    for (const [date, day] of Object.entries(state.db)) {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      if (d < today) {
+        for (const item of day.dailyPlanDone || []) {
+          if (item.targetId === targetId && item.targetType === targetType) {
+            saved += item.amount;
+          }
+        }
+      }
+    }
+    return saved;
+  };
+
+  // 1. ყოველთვიური გადასახადები (bills)
+  for (const bill of state.bills) {
+    if (bill.paid) continue;
+    if (!bill.dueDate) continue;
+
+    const due = new Date(bill.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffMs = due.getTime() - today.getTime();
+    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysLeft <= 0) continue; // ვადაგასულია
+
+    const saved = getSaved(bill.id, 'bill');
+    const remaining = Math.max(0, bill.amount - saved);
+    if (remaining <= 0) continue;
+
+    plans.push({
+      targetId: bill.id,
+      targetType: 'bill',
+      name: bill.name,
+      totalAmount: bill.amount,
+      alreadySaved: saved,
+      remaining,
+      daysLeft,
+      dailyAmount: Math.ceil(remaining / daysLeft),
+      dueDate: bill.dueDate,
+      icon: '📅',
+    });
+  }
+
+  // 2. ვალები (debts)
+  for (const debt of state.debts) {
+    if (debt.paid) continue;
+    if (!debt.dueDate) continue;
+
+    const due = new Date(debt.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffMs = due.getTime() - today.getTime();
+    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysLeft <= 0) continue;
+
+    const actualRemaining = debt.amount - (debt.paidAmount || 0);
+    if (actualRemaining <= 0) continue;
+
+    const saved = getSaved(debt.id, 'debt');
+    const remaining = Math.max(0, actualRemaining - saved);
+    if (remaining <= 0) continue;
+
+    plans.push({
+      targetId: debt.id,
+      targetType: 'debt',
+      name: debt.name,
+      totalAmount: actualRemaining,
+      alreadySaved: saved,
+      remaining,
+      daysLeft,
+      dailyAmount: Math.ceil(remaining / daysLeft),
+      dueDate: debt.dueDate,
+      icon: '💸',
+    });
+  }
+
+  // 3. გამოწერები (subscriptions)
+  for (const sub of state.subscriptions || []) {
+    if (sub.paid) continue;
+    if (!sub.dueDate) continue;
+
+    const due = new Date(sub.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffMs = due.getTime() - today.getTime();
+    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysLeft <= 0) continue;
+
+    const saved = getSaved(sub.id, 'subscription');
+    const remaining = Math.max(0, sub.amount - saved);
+    if (remaining <= 0) continue;
+
+    plans.push({
+      targetId: sub.id,
+      targetType: 'subscription',
+      name: sub.name,
+      totalAmount: sub.amount,
+      alreadySaved: saved,
+      remaining,
+      daysLeft,
+      dailyAmount: Math.ceil(remaining / daysLeft),
+      dueDate: sub.dueDate,
+      icon: '🔄',
+    });
+  }
+
+  // დალაგება ვადის მიხედვით (უახლოესი პირველი)
+  plans.sort((a, b) => a.daysLeft - b.daysLeft);
+  return plans;
+};

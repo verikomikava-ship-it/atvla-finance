@@ -94,6 +94,12 @@ export const EXTRA_INCOME_SOURCES: { key: ExtraIncomeSource; label: string; icon
   { key: 'სხვა', label: 'სხვა', icon: '📝', color: '#64748b' },
 ];
 
+export type DailyPlanItem = {
+  targetId: number;
+  targetType: 'bill' | 'debt' | 'subscription';
+  amount: number;
+};
+
 export type DayData = {
   incMain: number;
   incExtra: number;
@@ -104,6 +110,7 @@ export type DayData = {
   kulaba: number;
   comment: string;
   debtPaid?: boolean; // ვალის დაფარვის პწიჩკა
+  dailyPlanDone?: DailyPlanItem[]; // დღიური გეგმა — რა გადადო დღეს
   // ძველი ფორმატის ველები (backward compatibility)
   rune?: boolean;
   gas?: number;
