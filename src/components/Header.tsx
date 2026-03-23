@@ -17,6 +17,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { RadialBarChart, RadialBar, ResponsiveContainer, Tooltip } from 'recharts';
+import { SmartAdvisor } from './SmartAdvisor';
 
 interface HeaderProps {
   state: AppState;
@@ -377,6 +378,8 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       <BillAlerts bills={state.bills} debts={state.debts} subscriptions={state.subscriptions || []} />
+
+      <SmartAdvisor state={state} selectedMonth={selectedMonth} />
 
       {/* შემოსავალი / გასავალი — ერთი დიდი რადიალური გრაფიკი */}
       <div className="grid grid-cols-2 gap-2">
