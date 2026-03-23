@@ -103,6 +103,44 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
   const expensesTotal = getExpensesTotal(formData);
   const roundUpAmount = expensesTotal > 0 ? Math.ceil(expensesTotal / 10) * 10 - expensesTotal : 0;
 
+  // Quick-Add შაბლონები — ყველაზე ხშირი ხარჯი+თანხის კომბინაციები
+  const quickTemplates = useMemo(() => {
+    const freq: Record<string, { name: string; amount: number; sub: ExpenseSubcategory; count: number }> = {};
+    Object.values(state.db).forEach((day) => {
+      for (const exp of day.expenses || []) {
+        if (exp.amount > 0 && exp.subcategory) {
+          const key = `${exp.name}|${exp.amount}|${exp.subcategory}`;
+          if (!freq[key]) freq[key] = { name: exp.name, amount: exp.amount, sub: exp.subcategory, count: 0 };
+          freq[key].count++;
+        }
+      }
+    });
+    return Object.values(freq)
+      .filter((t) => t.count >= 3)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [state.db]);
+
+  // "ნამდვილად გინდა?" ფრიქშენი სურვილის ხარჯებისთვის
+  const [frictionExpenseId, setFrictionExpenseId] = useState<number | null>(null);
+
+  const addQuickExpense = (template: { name: string; amount: number; sub: ExpenseSubcategory }) => {
+    const info = SUBCATEGORIES[template.sub];
+    setFormData((prev) => ({
+      ...prev,
+      expenses: [
+        ...prev.expenses,
+        {
+          id: Date.now(),
+          name: template.name,
+          amount: template.amount,
+          category: info.defaultCategory,
+          subcategory: template.sub,
+        },
+      ],
+    }));
+  };
+
   // Escape-ით დახურვა
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -730,13 +768,34 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         {expense.subcategory ? SUBCATEGORIES[expense.subcategory].icon : '📋'}
                       </span>
                     </div>
-                    <Input
-                      type="text" inputMode="numeric"
-                      placeholder="₾"
-                      value={expense.amount || ''}
-                      onChange={(e) => updateExpense(expense.id, 'amount', +e.target.value)}
-                      className="w-16 h-7 text-xs"
-                    />
+                    <div className="relative">
+                      <Input
+                        type="text" inputMode="numeric"
+                        placeholder="₾"
+                        value={expense.amount || ''}
+                        onChange={(e) => {
+                          const val = +e.target.value;
+                          updateExpense(expense.id, 'amount', val);
+                          // "ნამდვილად გინდა?" — სურვილის ხარჯი > 50₾
+                          if (val > 50 && expense.category === 'სურვილი') {
+                            setFrictionExpenseId(expense.id);
+                          } else if (frictionExpenseId === expense.id) {
+                            setFrictionExpenseId(null);
+                          }
+                        }}
+                        className="w-16 h-7 text-xs"
+                      />
+                      {frictionExpenseId === expense.id && (
+                        <div className="absolute top-full left-0 right-0 mt-0.5 z-10 px-1.5 py-1 rounded-lg bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700 text-[8px] text-orange-700 dark:text-orange-300 whitespace-nowrap">
+                          ⏱️ {Math.round(expense.amount / (dailyBudget || 150) * 8)}სთ სამუშაო!
+                          <button
+                            type="button"
+                            onClick={() => setFrictionExpenseId(null)}
+                            className="ml-1 text-orange-400 hover:text-orange-600"
+                          >✕</button>
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={() =>
                         updateExpense(expense.id, 'category', nextCategory(expense.category))
@@ -915,6 +974,27 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                 </div>
               ))}
             </div>
+
+            {/* Quick-Add შაბლონები */}
+            {quickTemplates.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {quickTemplates.map((t) => {
+                  const icon = SUBCATEGORIES[t.sub]?.icon || '📝';
+                  return (
+                    <button
+                      key={`${t.name}-${t.amount}-${t.sub}`}
+                      type="button"
+                      onClick={() => addQuickExpense(t)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 text-[9px] font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                    >
+                      <span>{icon}</span>
+                      <span>{t.name}</span>
+                      <span className="text-blue-500">{t.amount}₾</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <Button
               variant="outline"

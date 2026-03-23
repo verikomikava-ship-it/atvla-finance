@@ -718,6 +718,137 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
       }
     }
 
+    // === ახალი ედონები ===
+
+    // 14. ხელფასამდე დათვლა
+    let daysToPayday = -1;
+    if (profile.incomeType === 'salary' || profile.incomeType === 'both') {
+      // ხელფასის დღე — თვეში 1-ჯერ: payFrequency monthly_1 = 1 რიცხვი, monthly_2 = 15 რიცხვი
+      const payDay = profile.payFrequency === 'monthly_2' ? 15 : 1;
+      const todayD = now.getDate();
+      if (todayD < payDay) {
+        daysToPayday = payDay - todayD;
+      } else {
+        const nextMonth = new Date(year, month + 1, payDay);
+        daysToPayday = Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    }
+
+    // 15. No-Spend Days — ფუფუნების გარეშე დღეები ამ თვეში
+    let noSpendDays = 0;
+    let totalMonthDays = 0;
+    Object.entries(state.db).forEach(([date, day]) => {
+      if (new Date(date).getMonth() === month) {
+        totalMonthDays++;
+        const wantsSpending = (day.expenses || [])
+          .filter((e) => e.category === 'სურვილი')
+          .reduce((s, e) => s + e.amount, 0);
+        if (wantsSpending === 0) noSpendDays++;
+      }
+    });
+
+    // 16. თვის პროგნოზი — ამ ტემპით რამდენს დახარჯავ
+    const predictedMonthExpense = monthActualExpenses + (avgDailyExpense * Math.max(0, daysRemaining - 1))
+      + unpaidBillsLeft + unpaidSubsLeft;
+    const monthBudgetTarget = totalMonthlyIncome;
+    const willOverspend = monthBudgetTarget > 0 && predictedMonthExpense > monthBudgetTarget;
+
+    // 17. Rollover ბიუჯეტი — ზუსტი დღიური გადატანა
+    let rolloverTotal = 0;
+    for (let i = 1; i <= todayDate - 1; i++) {
+      const d = new Date(year, month, i);
+      const key = d.toISOString().split('T')[0];
+      const data = state.db[key];
+      const dayExp = data ? getExpensesTotal(data) : 0;
+      rolloverTotal += dailyBudget - dayExp;
+    }
+    const rolloverBudget = Math.round(dailyBudget + (rolloverTotal / Math.max(1, daysRemaining)));
+    const cappedRollover = Math.max(Math.round(dailyBudget * 0.5), Math.min(Math.round(dailyBudget * 2), rolloverBudget));
+
+    // 18. Monthly Report Card — A-F ქულები
+    const getGrade = (score: number): string => {
+      if (score >= 90) return 'A';
+      if (score >= 75) return 'B';
+      if (score >= 60) return 'C';
+      if (score >= 40) return 'D';
+      return 'F';
+    };
+    // ხარჯვის კონტროლი
+    const spendingScore = totalDaysChecked > 0 ? Math.round((daysUnderBudget / totalDaysChecked) * 100) : 50;
+    // დანაზოგის რეიტი
+    const savingsScore = totalIncomeReal > 0 ? Math.min(100, Math.round((totalKulaba / totalIncomeReal) * 500)) : 0;
+    // ბილების დროულობა
+    const billScore = allBillsCount > 0 ? Math.round((paidBillsCount / allBillsCount) * 100) : 100;
+    // ბიუჯეტის დაცვა (avgDaily vs budget)
+    const budgetScore = dailyBudget > 0 ? Math.min(100, Math.round((1 - Math.max(0, avgDailyExpense - dailyBudget) / dailyBudget) * 100)) : 50;
+
+    const reportCard = {
+      spending: getGrade(spendingScore),
+      savings: getGrade(savingsScore),
+      bills: getGrade(billScore),
+      budget: getGrade(budgetScore),
+    };
+
+    // 19. ბილის გადახდის შეხსენება — დღეს ვადაა
+    const billsDueToday = state.bills.filter((b) => !b.paid && b.dueDate === today);
+    const subsDueToday = (state.subscriptions || []).filter((s) => !s.paid && s.dueDate === today);
+
+    if (billsDueToday.length > 0) {
+      insights.unshift({
+        level: 'critical', icon: '🔔',
+        title: `დღეს ვადაა: ${billsDueToday.map(b => b.name).join(', ')}!`,
+        message: `${billsDueToday.reduce((s, b) => s + b.amount, 0)}₾ — გადაიხადე დღესვე!`,
+      });
+    }
+    if (subsDueToday.length > 0) {
+      insights.unshift({
+        level: 'warning', icon: '🔔',
+        title: `გამოწერის ვადა: ${subsDueToday.map(s => s.name).join(', ')}!`,
+        message: `${subsDueToday.reduce((s, sub) => s + sub.amount, 0)}₾`,
+      });
+    }
+
+    // No-Spend Day insight
+    if (totalMonthDays >= 5) {
+      insights.push({
+        level: noSpendDays >= totalMonthDays * 0.4 ? 'success' : 'info',
+        icon: '🚫',
+        title: `${noSpendDays}/${totalMonthDays} დღე ფუფუნების გარეშე`,
+        message: noSpendDays < 10 ? 'ცადე 10-ს მიაღწიო ამ თვეში!' : 'შესანიშნავი თავშეკავება!',
+      });
+    }
+
+    // Month prediction
+    if (willOverspend && avgDailyExpense > 0) {
+      insights.push({
+        level: 'warning', icon: '🔮',
+        title: `პროგნოზი: ${Math.round(predictedMonthExpense)}₾ ხარჯი ამ თვეში`,
+        message: `ბიუჯეტი: ${monthBudgetTarget}₾. გადააჭარბებ ~${Math.round(predictedMonthExpense - monthBudgetTarget)}₾-ით.`,
+      });
+    }
+
+    // Payday countdown
+    if (daysToPayday > 0 && daysToPayday <= 7) {
+      insights.push({
+        level: 'info', icon: '💰',
+        title: `ხელფასამდე ${daysToPayday} დღე`,
+        message: `ჯიბეში: ${inMyPocket}₾ · გასტანე ${daysToPayday} დღე.`,
+      });
+    }
+
+    // 20. End-of-day reminder logic
+    const todayHasData = !!state.db[today];
+    const isEvening = now.getHours() >= 20;
+    const showEntryReminder = !todayHasData && isEvening;
+
+    if (showEntryReminder) {
+      insights.unshift({
+        level: 'info', icon: '📝',
+        title: 'დღეს ჯერ არაფერი ჩაგიწერია!',
+        message: '30 წამი საკმარისია — შეავსე რომ სტატისტიკა ზუსტი იყოს.',
+      });
+    }
+
     return {
       totalMonthlyIncome, monthlySalary, monthlyDailyIncome, monthlyAdditional,
       billsTotal, subsTotal, monthlyDebtPayment, monthlyLivingExpenses,
@@ -734,6 +865,11 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
       flexibilityRatio, fixedExpenses, variableExpenses,
       subsAnnualCost, totalKulaba, goalRemaining, daysToGoal,
       latteFactor, categoryDrifts, lombardInsights,
+      // ახალი ედონები
+      daysToPayday, noSpendDays, totalMonthDays,
+      predictedMonthExpense, willOverspend,
+      cappedRollover, rolloverTotal,
+      reportCard,
     };
   }, [state, selectedMonth]);
 
@@ -974,6 +1110,88 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
             <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700">
               <span className="text-[9px] text-violet-600 dark:text-violet-400 font-bold">🔄 გამოწერები წელიწადში:</span>
               <span className="text-sm font-black text-violet-700 dark:text-violet-300">{a.subsAnnualCost}₾</span>
+            </div>
+          )}
+
+          {/* თვიური ანგარიში + დამატებითი მეტრიკები */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {/* Report Card */}
+            <div className="rounded-xl bg-gradient-to-b from-indigo-50 to-indigo-100/50 dark:from-indigo-900/20 dark:to-indigo-900/10 p-2.5 border border-indigo-200 dark:border-indigo-700">
+              <p className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 mb-1.5">📊 თვიური ანგარიში</p>
+              <div className="grid grid-cols-2 gap-1">
+                {([
+                  ['ხარჯვა', a.reportCard.spending],
+                  ['დანაზოგი', a.reportCard.savings],
+                  ['ბილები', a.reportCard.bills],
+                  ['ბიუჯეტი', a.reportCard.budget],
+                ] as const).map(([label, grade]) => {
+                  const gradeColor = grade === 'A' ? 'text-emerald-600 dark:text-emerald-400'
+                    : grade === 'B' ? 'text-blue-600 dark:text-blue-400'
+                    : grade === 'C' ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-red-600 dark:text-red-400';
+                  return (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="text-[8px] text-muted-foreground">{label}:</span>
+                      <span className={cn('text-xs font-black', gradeColor)}>{grade}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* სწრაფი მეტრიკები */}
+            <div className="space-y-1.5">
+              {/* ხელფასამდე */}
+              {a.daysToPayday > 0 && (
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
+                  <span className="text-[8px] text-green-600 dark:text-green-400">💰 ხელფასამდე:</span>
+                  <span className="text-xs font-black text-green-700 dark:text-green-300">{a.daysToPayday} დღე</span>
+                </div>
+              )}
+              {/* No-Spend */}
+              {a.totalMonthDays > 0 && (
+                <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700">
+                  <span className="text-[8px] text-purple-600 dark:text-purple-400">🚫 No-Spend:</span>
+                  <span className="text-xs font-black text-purple-700 dark:text-purple-300">{a.noSpendDays}/{a.totalMonthDays}</span>
+                </div>
+              )}
+              {/* Rollover */}
+              {a.rolloverTotal !== 0 && (
+                <div className={cn('flex items-center justify-between px-2 py-1.5 rounded-xl border',
+                  a.rolloverTotal > 0
+                    ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700'
+                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700')}>
+                  <span className={cn('text-[8px]', a.rolloverTotal > 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-orange-600 dark:text-orange-400')}>
+                    {a.rolloverTotal > 0 ? '📈' : '📉'} ბიუჯეტი:
+                  </span>
+                  <span className={cn('text-xs font-black', a.rolloverTotal > 0 ? 'text-cyan-700 dark:text-cyan-300' : 'text-orange-700 dark:text-orange-300')}>
+                    {a.cappedRollover}₾/დღე
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* თვის პროგნოზი ბარი */}
+          {a.totalMonthlyIncome > 0 && a.predictedMonthExpense > 0 && (
+            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-orange-50 dark:from-slate-800/40 dark:to-orange-900/10 p-2.5 border border-slate-200 dark:border-slate-700">
+              <div className="flex justify-between text-[9px] mb-1">
+                <span className="font-bold text-slate-600 dark:text-slate-400">🔮 თვის პროგნოზი</span>
+                <span className={cn('font-black', a.willOverspend ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                  {Math.round(a.predictedMonthExpense)}₾ / {a.totalMonthlyIncome}₾
+                </span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full transition-all', a.willOverspend ? 'bg-red-500' : 'bg-emerald-500')}
+                  style={{ width: `${Math.min(100, Math.round((a.predictedMonthExpense / a.totalMonthlyIncome) * 100))}%` }}
+                />
+              </div>
+              <p className="text-[8px] text-center text-muted-foreground mt-0.5">
+                {a.willOverspend
+                  ? `⚠️ ~${Math.round(a.predictedMonthExpense - a.totalMonthlyIncome)}₾ დეფიციტი მოსალოდნელია`
+                  : `✓ ~${Math.round(a.totalMonthlyIncome - a.predictedMonthExpense)}₾ დარჩება`}
+              </p>
             </div>
           )}
 
