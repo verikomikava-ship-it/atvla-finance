@@ -1035,19 +1035,87 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
           </div>
 
           {/* დღიური გეგმა — რა უნდა გადადო დღეს */}
-          {dailyPlan.length > 0 && (
-            <div className="rounded-2xl border border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/10 overflow-hidden">
-              <div className="px-2.5 py-1.5 flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-700/60">
+          {dailyPlan.length > 0 && (() => {
+            const planDoneTotal = (formData.dailyPlanDone || []).reduce((s, d) => s + d.amount, 0);
+            const canAfford = dailyBudget >= dailyPlanTotal;
+            const deficit = dailyPlanTotal - dailyBudget;
+            const deficitPercent = dailyBudget > 0 ? Math.round((dailyPlanTotal / dailyBudget) * 100) : 999;
+
+            // პრიორიტეტული დალაგება: ვადა ახლოს + ბილები > ვალები > გამოწერები
+            const priorityOrder: Record<string, number> = { bill: 0, debt: 1, subscription: 2 };
+            const sortedPlan = [...dailyPlan].sort((a, b) => {
+              // ჯერ ვადით (ვინც ახლოსაა — პირველი)
+              if (a.daysLeft !== b.daysLeft) return a.daysLeft - b.daysLeft;
+              // მერე ტიპით
+              return (priorityOrder[a.targetType] ?? 3) - (priorityOrder[b.targetType] ?? 3);
+            });
+
+            // რეალისტური გეგმა: რა ეტევა ბიუჯეტში
+            let budgetLeft = dailyBudget;
+            const affordable = new Set<string>();
+            for (const entry of sortedPlan) {
+              if (budgetLeft >= entry.dailyAmount) {
+                affordable.add(`${entry.targetType}-${entry.targetId}`);
+                budgetLeft -= entry.dailyAmount;
+              }
+            }
+
+            return (
+            <div className={cn(
+              'rounded-2xl border overflow-hidden',
+              canAfford
+                ? 'border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/10'
+                : 'border-orange-300 dark:border-orange-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/10'
+            )}>
+              <div className={cn(
+                'px-2.5 py-1.5 flex items-center justify-between border-b',
+                canAfford ? 'border-indigo-200/60 dark:border-indigo-700/60' : 'border-orange-200/60 dark:border-orange-700/60'
+              )}>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm">📋</span>
-                  <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">დღიური გეგმა</span>
+                  <span className="text-sm">{canAfford ? '📋' : '⚠️'}</span>
+                  <span className={cn(
+                    'text-[10px] font-black uppercase tracking-wider',
+                    canAfford ? 'text-indigo-700 dark:text-indigo-300' : 'text-orange-700 dark:text-orange-300'
+                  )}>დღიური გეგმა</span>
                 </div>
-                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                  {(formData.dailyPlanDone || []).reduce((s, d) => s + d.amount, 0)}₾ / {dailyPlanTotal}₾
+                <span className={cn(
+                  'text-[10px] font-bold',
+                  canAfford ? 'text-indigo-600 dark:text-indigo-400' : 'text-orange-600 dark:text-orange-400'
+                )}>
+                  {planDoneTotal}₾ / {dailyPlanTotal}₾
                 </span>
               </div>
+
+              {/* გაფრთხილება — ბიუჯეტი არ ყოფნის */}
+              {!canAfford && (
+                <div className="px-2.5 py-2 bg-orange-100/80 dark:bg-orange-900/30 border-b border-orange-200/60 dark:border-orange-700/60">
+                  <p className="text-[10px] font-bold text-orange-800 dark:text-orange-200">
+                    ⚠️ გეგმა ({dailyPlanTotal}₾) აჭარბებს ბიუჯეტს ({dailyBudget}₾) {deficit}₾-ით
+                  </p>
+                  <p className="text-[9px] text-orange-700 dark:text-orange-300 mt-0.5">
+                    {deficitPercent >= 200
+                      ? '🔴 ვალდებულებები 2-ჯერ აჭარბებს შემოსავალს. პრიორიტეტულად გადაიხადე მნიშვნელოვანი!'
+                      : deficitPercent >= 150
+                      ? '🟠 გეგმის 50%+ ვერ დაფარავ. ფოკუსირდი უახლოეს ვადებზე.'
+                      : '🟡 ცოტათი არ ყოფნის. სცადე მთავარი გადასახადები ჯერ.'}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className="flex-1 h-1.5 rounded-full bg-orange-200 dark:bg-orange-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                        style={{ width: `${Math.min(100, (dailyBudget / dailyPlanTotal) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[8px] font-bold text-orange-600 dark:text-orange-400">
+                      {Math.round((dailyBudget / dailyPlanTotal) * 100)}% ეტევა
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="p-1.5 space-y-1">
-                {dailyPlan.map((entry) => {
+                {sortedPlan.map((entry) => {
+                  const entryKey = `${entry.targetType}-${entry.targetId}`;
                   const checked = isDailyPlanChecked(entry);
                   const savedItem = (formData.dailyPlanDone || []).find(
                     (d) => d.targetId === entry.targetId && d.targetType === entry.targetType
@@ -1055,21 +1123,39 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                   const savedAmount = savedItem?.amount || 0;
                   const smartExtra = getSmartExtraAmount(entry);
                   const smartTotal = entry.dailyAmount + smartExtra;
+                  const isAffordable = affordable.has(entryKey);
+                  const isUrgent = entry.daysLeft <= 3;
+
                   const typeColors: Record<string, string> = {
                     bill: 'border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20',
                     debt: 'border-red-400 bg-red-50 dark:bg-red-900/20',
                     subscription: 'border-violet-400 bg-violet-50 dark:bg-violet-900/20',
                   };
+
                   return (
                     <div
-                      key={`${entry.targetType}-${entry.targetId}`}
+                      key={entryKey}
                       className={cn(
                         'flex items-center gap-1 px-2 py-1.5 rounded-xl border transition-all',
                         checked
                           ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 opacity-60'
+                          : !canAfford && !isAffordable
+                          ? 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 opacity-50'
+                          : isUrgent
+                          ? 'border-red-400 bg-red-50 dark:bg-red-900/20 ring-1 ring-red-300 dark:ring-red-700'
                           : typeColors[entry.targetType] || 'border-slate-200 bg-white dark:bg-slate-800'
                       )}
                     >
+                      {/* პრიორიტეტის ინდიკატორი */}
+                      {!canAfford && !checked && (
+                        <span className="text-[8px] shrink-0" title={isAffordable ? 'ეტევა ბიუჯეტში' : 'ბიუჯეტს აჭარბებს'}>
+                          {isAffordable ? '✅' : '⏸️'}
+                        </span>
+                      )}
+                      {isUrgent && !checked && (
+                        <span className="text-[8px] shrink-0" title="სასწრაფო!">🔥</span>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => toggleDailyPlanItem(entry)}
@@ -1083,23 +1169,35 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                         </div>
                         <span className="text-xs">{entry.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className={cn('text-[11px] font-bold truncate', checked && 'line-through text-muted-foreground')}>
+                          <p className={cn(
+                            'text-[11px] font-bold truncate',
+                            checked && 'line-through text-muted-foreground',
+                            !canAfford && !isAffordable && !checked && 'text-slate-400 dark:text-slate-500'
+                          )}>
                             {entry.name}
                           </p>
                           <p className="text-[9px] text-muted-foreground">
-                            {entry.daysLeft} დღე დარჩა · {entry.alreadySaved > 0 && `${entry.alreadySaved}₾ გადადებულია · `}
-                            {entry.remaining}₾ სულ
+                            {isUrgent ? <span className="text-red-500 font-bold">{entry.daysLeft} დღე!</span> : <>{entry.daysLeft} დღე დარჩა</>}
+                            {entry.alreadySaved > 0 && ` · ${entry.alreadySaved}₾ გადადებულია`}
+                            {' · '}{entry.remaining}₾ სულ
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={cn('text-sm font-black', checked ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-700 dark:text-indigo-300')}>
+                          <p className={cn(
+                            'text-sm font-black',
+                            checked ? 'text-emerald-600 dark:text-emerald-400'
+                              : !canAfford && !isAffordable ? 'text-slate-400 dark:text-slate-500'
+                              : 'text-indigo-700 dark:text-indigo-300'
+                          )}>
                             {checked ? savedAmount : entry.dailyAmount}₾
                           </p>
-                          <p className="text-[8px] text-muted-foreground">{checked && savedAmount > entry.dailyAmount ? `+${savedAmount - entry.dailyAmount}₾ წინსწრ.` : 'დღეს'}</p>
+                          <p className="text-[8px] text-muted-foreground">
+                            {checked && savedAmount > entry.dailyAmount ? `+${savedAmount - entry.dailyAmount}₾ წინსწრ.` : 'დღეს'}
+                          </p>
                         </div>
                       </button>
                       {/* წინსწრებით დაფარვის ღილაკი — ჭკვიანი თანხით */}
-                      {!checked && smartExtra > 0 && (
+                      {!checked && smartExtra > 0 && isAffordable && (
                         <button
                           type="button"
                           onClick={() => toggleDailyPlanItem(entry, smartExtra)}
@@ -1117,8 +1215,27 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
                   );
                 })}
               </div>
+
+              {/* რეალისტური შეჯამება */}
+              {!canAfford && (
+                <div className="px-2.5 py-1.5 border-t border-orange-200/60 dark:border-orange-700/60 bg-orange-50/50 dark:bg-orange-900/10">
+                  <div className="flex justify-between text-[9px]">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✅ რეალისტური ({affordable.size}):</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {sortedPlan.filter(e => affordable.has(`${e.targetType}-${e.targetId}`)).reduce((s, e) => s + e.dailyAmount, 0)}₾
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[9px]">
+                    <span className="text-slate-400 font-bold">⏸️ გადადებული ({sortedPlan.length - affordable.size}):</span>
+                    <span className="font-bold text-slate-400">
+                      {sortedPlan.filter(e => !affordable.has(`${e.targetType}-${e.targetId}`)).reduce((s, e) => s + e.dailyAmount, 0)}₾
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+            );
+          })()}
 
           {/* კულაბა */}
           <div className="px-2.5 py-2 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-700">
