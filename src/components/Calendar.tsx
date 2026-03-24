@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { MapPin, MessageSquare, Briefcase, Check } from 'lucide-react';
+import { MapPin, MessageSquare, Briefcase, Check, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AppState } from '../types';
+import { AppState, EVENT_TYPES } from '../types';
 import { getDayStatusAdvanced, calculateDayTotal, getExpensesTotal, getDailyTargetForDate, isWorkDay } from '../utils/calculations';
 
 interface CalendarProps {
@@ -87,6 +87,11 @@ export const Calendar: React.FC<CalendarProps> = ({ state, selectedMonth, onDayS
             {data?.debtPaid && (
               <div title="ვალი გადახდილია">
                 <Check className="w-2.5 h-2.5 text-pink-500" />
+              </div>
+            )}
+            {data?.events && data.events.length > 0 && (
+              <div title={data.events.map(e => EVENT_TYPES[e.type]?.icon + ' ' + EVENT_TYPES[e.type]?.label).join(', ')}>
+                <CalendarDays className="w-2.5 h-2.5 text-teal-500" />
               </div>
             )}
             {data?.comment && (

@@ -2,25 +2,23 @@ import React, { useState } from 'react';
 import { User, ConfirmationResult } from 'firebase/auth';
 import { UserProfile, PayFrequency, Bill, Debt, Lombard, BankLoan, BankProductType, BANK_PRODUCT_TYPES, UTILITY_TYPES } from '../types';
 import { getWorkDaysInMonth } from '../utils/calculations';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Briefcase, Rocket, Layers, ArrowLeft, ArrowRight, Plus, X, Check, Calendar, Package, Landmark, Cloud, CloudOff } from 'lucide-react';
+import { Briefcase, Rocket, Layers, ArrowLeft, ArrowRight, Plus, X, Check, Cloud, CloudOff, ChevronDown, ChevronRight } from 'lucide-react';
 
-// ყოველთვიური გადასახადის კატეგორიები (სესხი ამოიღო — ცალკე "ბანკი" step-ში გადავიდა)
-const BILL_CATEGORIES = [
-  { key: 'ქირა', label: 'ქირა', icon: '🏢', color: '#8b5cf6' },
-  { key: 'დაზღვევა', label: 'დაზღვევა', icon: '🛡️', color: '#f59e0b' },
-  { key: 'ტელეფონი', label: 'ტელეფონი', icon: '📱', color: '#06b6d4' },
-  { key: 'გამოწერები', label: 'გამოწერები', icon: '🔄', color: '#a855f7' },
-  { key: 'სხვა', label: 'სხვა', icon: '📝', color: '#64748b' },
+const BILL_PRESETS = [
+  { name: 'ქირა', icon: '🏢' },
+  { name: 'დაზღვევა', icon: '🛡️' },
+  { name: 'ტელეფონი', icon: '📱' },
+  { name: 'ინტერნეტი', icon: '🌐' },
+  { name: 'Netflix', icon: '🎬' },
 ] as const;
 
 interface SetupWizardProps {
   onComplete: (profile: UserProfile, bills: Bill[], debts?: Debt[], lombards?: Lombard[], bankLoans?: BankLoan[]) => void;
-  // Auth props
   user: User | null;
   authLoading: boolean;
   onSignInWithGoogle: () => Promise<void>;
@@ -40,7 +38,7 @@ const WEEK_DAYS = [
   { value: 0, label: 'კვი' },
 ];
 
-const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5]; // ორშაბათი-პარასკევი
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5];
 
 const DEFAULT_PROFILE: UserProfile = {
   setupCompleted: false,
@@ -53,6 +51,8 @@ const DEFAULT_PROFILE: UserProfile = {
   dailyBudget: 0,
 };
 
+const inputClass = "flex h-11 w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors";
+
 export const SetupWizard: React.FC<SetupWizardProps> = ({
   onComplete, user, authLoading,
   onSignInWithGoogle, onSignInWithEmail, onSignUpWithEmail,
@@ -60,9 +60,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
 }) => {
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
-  const [bills, setBills] = useState<Bill[]>([]);
 
-  // Auth state (step 0.5)
+  // Auth
   const [authTab, setAuthTab] = useState<'google' | 'email' | 'phone'>('google');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -73,31 +72,20 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const [authError, setAuthError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
 
-  // String state ინფუთებისთვის (Electron-ში number value არ მუშაობს)
+  // Step 1 inputs
   const [salaryInput, setSalaryInput] = useState('');
   const [dailyTargetInput, setDailyTargetInput] = useState('');
+
+  // Step 2 — bills
+  const [bills, setBills] = useState<Bill[]>([]);
   const [newBillName, setNewBillName] = useState('');
   const [newBillAmount, setNewBillAmount] = useState('');
   const [newBillDueDay, setNewBillDueDay] = useState('');
-  const [selectedBillCategory, setSelectedBillCategory] = useState<string | null>(null);
-  // კომუნალურების state (ცალკე ნაბიჯი)
+
+  // Step 2 — utilities
   const [utilityAmounts, setUtilityAmounts] = useState<Record<string, string>>({});
-  const [newAiName, setNewAiName] = useState('');
-  const [newAiAmount, setNewAiAmount] = useState('');
-  const [newAiFrequency, setNewAiFrequency] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
 
-  // ლობარდის state
-  const [lombardItems, setLombardItems] = useState<{
-    itemName: string; principal: number; monthlyInterest: number;
-    contractNumber?: string; paymentDay: number;
-  }[]>([]);
-  const [lombItemName, setLombItemName] = useState('');
-  const [lombPrincipal, setLombPrincipal] = useState('');
-  const [lombInterest, setLombInterest] = useState('');
-  const [lombContract, setLombContract] = useState('');
-  const [lombPayDay, setLombPayDay] = useState('');
-
-  // ბანკი state
+  // Step 2 — bank loans
   const [bankItems, setBankItems] = useState<{
     type: BankProductType; name?: string; principal: number;
     monthlyInterest: number; paymentDay: number;
@@ -111,10 +99,56 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const [bankPayDay, setBankPayDay] = useState('');
   const [bankTotalMonths, setBankTotalMonths] = useState('');
   const [bankPaidMonths, setBankPaidMonths] = useState('');
-  const [bankLateFee, setBankLateFee] = useState('20');
-  const [bankDailyPenalty, setBankDailyPenalty] = useState('0.5');
 
-  // სინქრონიზაცია: string → profile number
+  // Step 2 — lombards
+  const [lombardItems, setLombardItems] = useState<{
+    itemName: string; principal: number; monthlyInterest: number;
+    contractNumber?: string; paymentDay: number;
+  }[]>([]);
+  const [lombItemName, setLombItemName] = useState('');
+  const [lombPrincipal, setLombPrincipal] = useState('');
+  const [lombInterest, setLombInterest] = useState('');
+  const [lombPayDay, setLombPayDay] = useState('');
+
+  // Expandable sections
+  const [openSection, setOpenSection] = useState<'bills' | 'utilities' | 'bank' | 'lombard' | null>(null);
+
+  // === გამოთვლები ===
+  const now = new Date();
+  const workDaysInMonth = getWorkDaysInMonth(now.getFullYear(), now.getMonth(), profile.workDays || DEFAULT_WORK_DAYS);
+  const dailySalary = profile.salary > 0 ? Math.round(profile.salary / workDaysInMonth) : 0;
+
+  const getDailyTarget = (): number => {
+    if (profile.incomeType === 'freelance') return profile.dailyTarget || 0;
+    if (profile.incomeType === 'salary') return dailySalary;
+    return dailySalary + (profile.dailyTarget || 0);
+  };
+
+  const getMonthlyIncome = (): number => {
+    let monthly = 0;
+    if (profile.incomeType === 'salary' || profile.incomeType === 'both') monthly += profile.salary;
+    if (profile.incomeType === 'freelance' || profile.incomeType === 'both') monthly += (profile.dailyTarget || 0) * 30;
+    profile.additionalIncomes.forEach((ai) => {
+      if (ai.frequency === 'monthly') monthly += ai.amount;
+      if (ai.frequency === 'weekly') monthly += (ai.amount * 52) / 12;
+      if (ai.frequency === 'daily') monthly += ai.amount * 30;
+    });
+    return Math.round(monthly);
+  };
+
+  const dailyTarget = getDailyTarget();
+  const monthlyIncome = getMonthlyIncome();
+
+  // ბილების ჯამი
+  const uniqueBills = bills.reduce<Record<string, number>>((acc, b) => { acc[b.name] = b.amount; return acc; }, {});
+  const utilityTotal = Object.values(utilityAmounts).reduce((s, v) => s + (parseInt(v) || 0), 0);
+  const monthlyBillsTotal = Object.values(uniqueBills).reduce((s, a) => s + a, 0) + utilityTotal;
+  const bankMonthlyTotal = bankItems.reduce((s, b) => s + b.monthlyInterest, 0);
+  const lombardMonthlyTotal = lombardItems.reduce((s, l) => s + l.monthlyInterest, 0);
+  const totalMonthlyExpenses = monthlyBillsTotal + bankMonthlyTotal + lombardMonthlyTotal;
+  const dailyBudget = Math.round(Math.max(0, monthlyIncome - totalMonthlyExpenses) / 30);
+
+  // === ფუნქციები ===
   const updateSalary = (val: string) => {
     setSalaryInput(val);
     setProfile((p) => ({ ...p, salary: Math.max(0, parseInt(val) || 0) }));
@@ -126,197 +160,84 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   };
 
   const toggleWorkDay = (day: number) => {
-    setProfile((p) => {
-      const current = p.workDays || [];
-      const next = current.includes(day)
-        ? current.filter((d) => d !== day)
-        : [...current, day];
-      return { ...p, workDays: next };
-    });
-  };
-
-  // უნიკალური ბილები
-  const uniqueBills = bills.reduce<Record<string, number>>((acc, b) => {
-    acc[b.name] = b.amount;
-    return acc;
-  }, {});
-  // კომუნალურების ჯამი
-  const utilityTotal = Object.entries(utilityAmounts).reduce((sum, [, val]) => sum + (parseInt(val) || 0), 0);
-  const monthlyBillsTotal = Object.values(uniqueBills).reduce((sum, amount) => sum + amount, 0) + utilityTotal;
-
-  // სამუშაო დღეები ამ თვეში
-  const now = new Date();
-  const workDaysInMonth = getWorkDaysInMonth(now.getFullYear(), now.getMonth(), profile.workDays || DEFAULT_WORK_DAYS);
-
-  // თვიური შემოსავალი
-  const getMonthlyIncome = (): number => {
-    let monthly = 0;
-
-    if (profile.incomeType === 'salary' || profile.incomeType === 'both') {
-      monthly += profile.salary;
-    }
-    if (profile.incomeType === 'freelance') {
-      monthly += (profile.dailyTarget || 0) * 30;
-    }
-    if (profile.incomeType === 'both') {
-      monthly += (profile.dailyTarget || 0) * 30;
-    }
-
-    profile.additionalIncomes.forEach((ai) => {
-      switch (ai.frequency) {
-        case 'monthly': monthly += ai.amount; break;
-        case 'weekly': monthly += (ai.amount * 52) / 12; break;
-        case 'daily': monthly += ai.amount * 30; break;
-      }
-    });
-
-    return Math.round(monthly);
-  };
-
-  const monthlyIncome = getMonthlyIncome();
-
-  // დღიური ხელფასი (სამუშაო დღეებზე)
-  const dailySalary = profile.salary > 0 ? Math.round(profile.salary / workDaysInMonth) : 0;
-
-  // დღიური გეგმა სამუშაო დღეზე
-  const getDailyTarget = (): number => {
-    if (profile.incomeType === 'freelance') {
-      return profile.dailyTarget || 0;
-    }
-    if (profile.incomeType === 'salary') {
-      return dailySalary;
-    }
-    // both
-    return dailySalary + (profile.dailyTarget || 0);
-  };
-
-  const dailyTarget = getDailyTarget();
-  // ბიუჯეტი = (თვიური შემოსავალი - ბილები) / 30
-  const dailyBudget = Math.round((monthlyIncome - monthlyBillsTotal) / 30);
-
-  const addAdditionalIncome = () => {
-    if (!newAiName.trim() || !newAiAmount) return;
-    setProfile((prev) => ({
-      ...prev,
-      additionalIncomes: [
-        ...prev.additionalIncomes,
-        {
-          id: Date.now(),
-          name: newAiName.trim(),
-          amount: Math.max(0, parseInt(newAiAmount) || 0),
-          frequency: newAiFrequency,
-        },
-      ],
-    }));
-    setNewAiName('');
-    setNewAiAmount('');
-  };
-
-  const removeAdditionalIncome = (id: number) => {
-    setProfile((prev) => ({
-      ...prev,
-      additionalIncomes: prev.additionalIncomes.filter((ai) => ai.id !== id),
+    setProfile((p) => ({
+      ...p,
+      workDays: (p.workDays || []).includes(day)
+        ? (p.workDays || []).filter((d) => d !== day)
+        : [...(p.workDays || []), day],
     }));
   };
 
-  const addBill = () => {
-    if (!newBillName.trim() || !newBillAmount) return;
+  const addBill = (name?: string) => {
+    const billName = name || newBillName.trim();
+    if (!billName || !newBillAmount) return;
     const ts = Date.now();
     const currentYear = new Date().getFullYear();
     const dueDay = parseInt(newBillDueDay) || 1;
     const billsToAdd: Bill[] = [];
-
     for (let month = 0; month < 12; month++) {
-      const lastDayOfMonth = new Date(currentYear, month + 1, 0).getDate();
-      const actualDay = Math.min(dueDay, lastDayOfMonth);
-      const monthStr = String(month + 1).padStart(2, '0');
-      const dayStr = String(actualDay).padStart(2, '0');
-
+      const lastDay = new Date(currentYear, month + 1, 0).getDate();
+      const actualDay = Math.min(dueDay, lastDay);
       billsToAdd.push({
         id: ts + month,
-        name: newBillName.trim(),
+        name: billName,
         amount: Math.max(0, parseInt(newBillAmount) || 0),
         date: '',
         paid: false,
         reset_month: month,
-        dueDate: `${currentYear}-${monthStr}-${dayStr}`,
+        dueDate: `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`,
         isRecurring: true,
       });
     }
-
     setBills((prev) => [...prev, ...billsToAdd]);
     setNewBillName('');
     setNewBillAmount('');
     setNewBillDueDay('');
-    setSelectedBillCategory(null);
   };
 
-  const selectBillCategory = (key: string) => {
-    setSelectedBillCategory(key);
-    const cat = BILL_CATEGORIES.find((c) => c.key === key);
-    if (cat && key !== 'სხვა') {
-      setNewBillName(cat.label);
-    } else if (key === 'სხვა') {
-      setNewBillName('');
-    }
+  const removeBillGroup = (name: string) => setBills((prev) => prev.filter((b) => b.name !== name));
+
+  const addBankItem = () => {
+    if (!bankType) return;
+    const pr = parseInt(bankPrincipal) || 0;
+    const interest = parseInt(bankInterest) || 0;
+    const day = parseInt(bankPayDay) || 1;
+    const total = parseInt(bankTotalMonths) || 12;
+    const paid = parseInt(bankPaidMonths) || 0;
+    if (pr <= 0 || interest <= 0) return;
+    setBankItems((prev) => [...prev, {
+      type: bankType, name: bankName.trim() || undefined, principal: pr,
+      monthlyInterest: interest, paymentDay: Math.min(31, Math.max(1, day)),
+      totalMonths: total, paidMonths: Math.min(paid, total),
+      lateFee: 20, dailyPenaltyRate: 0.5,
+    }]);
+    setBankType(null); setBankName(''); setBankPrincipal(''); setBankInterest('');
+    setBankPayDay(''); setBankTotalMonths(''); setBankPaidMonths('');
   };
 
-  const removeBillGroup = (name: string) => {
-    setBills((prev) => prev.filter((b) => b.name !== name));
-  };
-
-  // ლობარდის ფუნქციები
   const addLombardItem = () => {
     const name = lombItemName.trim();
     const pr = parseInt(lombPrincipal) || 0;
     const interest = parseInt(lombInterest) || 0;
-    const day = parseInt(lombPayDay) || 0;
-    if (!name) { alert('შეიყვანე ნივთის დასახელება'); return; }
-    if (pr <= 0) { alert('შეიყვანე სწორი ძირი თანხა'); return; }
-    if (interest <= 0) { alert('შეიყვანე სწორი ყოველთვიური პროცენტი'); return; }
-    if (day < 1 || day > 31) { alert('შეიყვანე გადახდის დღე (1-31)'); return; }
+    const day = parseInt(lombPayDay) || 1;
+    if (!name || pr <= 0 || interest <= 0) return;
     setLombardItems((prev) => [...prev, {
       itemName: name, principal: pr, monthlyInterest: interest,
-      contractNumber: lombContract.trim() || undefined, paymentDay: day,
+      paymentDay: Math.min(31, Math.max(1, day)),
     }]);
-    setLombItemName(''); setLombPrincipal(''); setLombInterest('');
-    setLombContract(''); setLombPayDay('');
+    setLombItemName(''); setLombPrincipal(''); setLombInterest(''); setLombPayDay('');
   };
 
-  const removeLombardItem = (index: number) => {
-    setLombardItems((prev) => prev.filter((_, i) => i !== index));
+  const needsSalary = profile.incomeType === 'salary' || profile.incomeType === 'both';
+  const needsDailyTarget = profile.incomeType === 'freelance' || profile.incomeType === 'both';
+
+  const canProceedStep1 = (): boolean => {
+    if (profile.incomeType === 'salary') return profile.salary > 0;
+    if (profile.incomeType === 'freelance') return (profile.dailyTarget || 0) > 0;
+    return profile.salary > 0;
   };
 
-  // ბანკის ფუნქციები
-  const addBankItem = () => {
-    if (!bankType) { alert('აირჩიე პროდუქტის ტიპი'); return; }
-    if (bankType === 'სხვა' && !bankName.trim()) { alert('შეიყვანე სესხის სახელი'); return; }
-    const pr = parseInt(bankPrincipal) || 0;
-    const interest = parseInt(bankInterest) || 0;
-    const day = parseInt(bankPayDay) || 0;
-    const total = parseInt(bankTotalMonths) || 0;
-    const paid = parseInt(bankPaidMonths) || 0;
-    if (pr <= 0) { alert('შეიყვანე სწორი ძირი თანხა'); return; }
-    if (interest <= 0) { alert('შეიყვანე სწორი პროცენტის თანხა'); return; }
-    if (day < 1 || day > 31) { alert('შეიყვანე გადახდის დღე (1-31)'); return; }
-    if (total <= 0) { alert('შეიყვანე რამდენთვიანია სესხი'); return; }
-    if (paid > total) { alert('გადახდილი თვეები ვადაზე მეტია'); return; }
-    setBankItems((prev) => [...prev, {
-      type: bankType, name: bankName.trim() || undefined, principal: pr,
-      monthlyInterest: interest, paymentDay: day,
-      totalMonths: total, paidMonths: paid,
-      lateFee: parseFloat(bankLateFee) || 20, dailyPenaltyRate: parseFloat(bankDailyPenalty) || 0.5,
-    }]);
-    setBankType(null); setBankName(''); setBankPrincipal(''); setBankInterest('');
-    setBankPayDay(''); setBankTotalMonths(''); setBankPaidMonths('');
-    setBankLateFee('20'); setBankDailyPenalty('0.5');
-  };
-
-  const removeBankItem = (index: number) => {
-    setBankItems((prev) => prev.filter((_, i) => i !== index));
-  };
-
-
+  // === handleFinish — ზუსტად იგივე ლოგიკა ===
   const handleFinish = () => {
     const finalProfile: UserProfile = {
       ...profile,
@@ -325,9 +246,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
       setupCompleted: true,
     };
 
-    // კომუნალურების ბილების გენერაცია
-    const utilityBills: Bill[] = [];
     const currentYear = new Date().getFullYear();
+    const today = new Date().toISOString().split('T')[0];
+
+    // კომუნალურების ბილები
+    const utilityBills: Bill[] = [];
     Object.entries(utilityAmounts).forEach(([utilKey, amountStr]) => {
       const amount = parseInt(amountStr) || 0;
       if (amount <= 0) return;
@@ -347,18 +270,15 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
       }
     });
 
-    // ლობარდების გენერაცია: debts + bills + lombard records
+    // ლომბარდები
     const setupDebts: Debt[] = [];
     const setupLombards: Lombard[] = [];
     const lombardBills: Bill[] = [];
-    const today = new Date().toISOString().split('T')[0];
 
     lombardItems.forEach((item, idx) => {
       const baseId = Date.now() + idx * 1000;
       const debtId = baseId;
       const billIds: number[] = [];
-
-      // ვალი (ძირი თანხა)
       setupDebts.push({
         id: debtId,
         name: `🏪 ლობარდი: ${item.itemName}`,
@@ -367,15 +287,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
         priority: 'high',
         paidAmount: 0,
       });
-
-      // 12 ბილი (ყოველთვიური პროცენტი)
       for (let month = 0; month < 12; month++) {
         const billId = baseId + 1 + month;
         billIds.push(billId);
         const lastDay = new Date(currentYear, month + 1, 0).getDate();
         const actualDay = Math.min(item.paymentDay, lastDay);
-        const monthStr = String(month + 1).padStart(2, '0');
-        const dayStr = String(actualDay).padStart(2, '0');
         lombardBills.push({
           id: billId,
           name: `🏪 ლობარდი %: ${item.itemName}`,
@@ -383,16 +299,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
           date: '',
           paid: false,
           reset_month: month,
-          dueDate: `${currentYear}-${monthStr}-${dayStr}`,
+          dueDate: `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`,
         });
       }
-
       setupLombards.push({
         id: baseId + 100,
         itemName: item.itemName,
         principal: item.principal,
         monthlyInterest: item.monthlyInterest,
-        contractNumber: item.contractNumber,
         paymentDay: item.paymentDay,
         debtId,
         billIds,
@@ -401,7 +315,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
       });
     });
 
-    // ბანკის პროდუქტების გენერაცია
+    // ბანკის პროდუქტები
     const setupBankLoans: BankLoan[] = [];
     bankItems.forEach((item, idx) => {
       const bankBaseId = Date.now() + 500000 + idx * 1000;
@@ -409,13 +323,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
       const bankBillIds: number[] = [];
       const bLabel = item.name ? `${item.type}: ${item.name}` : item.type;
 
-      // startDate/endDate გამოითვალოს paidMonths/totalMonths-დან
       const startMonth = new Date();
       startMonth.setMonth(startMonth.getMonth() - item.paidMonths);
       const endMonth = new Date();
       endMonth.setMonth(endMonth.getMonth() + (item.totalMonths - item.paidMonths));
-      const bStartDate = `${startMonth.getFullYear()}-${String(startMonth.getMonth() + 1).padStart(2, '0')}`;
-      const bEndDate = `${endMonth.getFullYear()}-${String(endMonth.getMonth() + 1).padStart(2, '0')}`;
 
       setupDebts.push({
         id: bankDebtId,
@@ -433,8 +344,6 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
         bankBillIds.push(bBillId);
         const bLastDay = new Date(currentYear, month + 1, 0).getDate();
         const bActualDay = Math.min(item.paymentDay, bLastDay);
-        const bMonthStr = String(month + 1).padStart(2, '0');
-        const bDayStr = String(bActualDay).padStart(2, '0');
         lombardBills.push({
           id: bBillId,
           name: `🏦 ${bLabel} %`,
@@ -442,7 +351,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
           date: '',
           paid: false,
           reset_month: month,
-          dueDate: `${currentYear}-${bMonthStr}-${bDayStr}`,
+          dueDate: `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(bActualDay).padStart(2, '0')}`,
         });
       }
 
@@ -453,8 +362,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
         principal: item.principal,
         monthlyInterest: item.monthlyInterest,
         paymentDay: item.paymentDay,
-        startDate: bStartDate,
-        endDate: bEndDate,
+        startDate: `${startMonth.getFullYear()}-${String(startMonth.getMonth() + 1).padStart(2, '0')}`,
+        endDate: `${endMonth.getFullYear()}-${String(endMonth.getMonth() + 1).padStart(2, '0')}`,
         totalMonths: item.totalMonths,
         debtId: bankDebtId,
         billIds: bankBillIds,
@@ -468,49 +377,32 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
     onComplete(finalProfile, [...bills, ...utilityBills, ...lombardBills], setupDebts, setupLombards, setupBankLoans);
   };
 
-  // ინსტალაციის გამოტოვება — default პროფილით
   const handleSkipSetup = () => {
-    const skipProfile: UserProfile = {
-      ...DEFAULT_PROFILE,
-      dailyBudget: 150,
-      setupCompleted: true,
-    };
-    onComplete(skipProfile, []);
+    onComplete({ ...DEFAULT_PROFILE, dailyBudget: 150, setupCompleted: true }, []);
   };
 
-  // ვალიდაცია: შემდეგ ღილაკის ჩართვა
-  const canProceedStep2 = (): boolean => {
-    if (profile.incomeType === 'salary') return profile.salary > 0;
-    if (profile.incomeType === 'freelance') return (profile.dailyTarget || 0) > 0;
-    return profile.salary > 0; // 'both': ხელფასი სავალდებულო, დანამატი არა
-  };
+  // === Section Toggle ===
+  const toggleSection = (s: typeof openSection) => setOpenSection(openSection === s ? null : s);
 
-  // საჭირო ტიპები step2-ისთვის
-  const needsSalary = profile.incomeType === 'salary' || profile.incomeType === 'both';
-  const needsDailyTarget = profile.incomeType === 'freelance' || profile.incomeType === 'both';
-  const needsWorkDays = profile.incomeType === 'salary' || profile.incomeType === 'both';
-
-  const nativeInputClass = "flex h-10 w-full rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors";
-
+  // === RENDER ===
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg my-auto py-8">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="min-h-full flex items-start justify-center p-4">
+        <div className="w-full max-w-lg my-auto py-8">
 
-        {/* Step 0: მისასალმებელი + ავტორიზაცია */}
+        {/* === Step 0: მისალმება === */}
         {step === 0 && (
           <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
             <CardContent className="pt-8 pb-8 text-center space-y-6">
               <div className="text-6xl mb-4">🏺</div>
               <CardTitle className="text-3xl font-black text-blue-600">ჩემი ფინანსები</CardTitle>
               <CardDescription className="text-base">
-                მართე შენი ყოველდღიური ფინანსები, დააგროვე კულაბაში და მიაღწიე შენს მიზანს
+                3 მარტივი ნაბიჯი და მზადაა
               </CardDescription>
 
-              {/* ავტორიზაციის სექცია */}
               {!authLoading && (
                 <div className="pt-2">
                   {user ? (
-                    // შესულია
                     <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 space-y-2">
                       <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400">
                         <Cloud className="w-5 h-5" />
@@ -526,20 +418,17 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                         )}
                         <span className="text-sm text-slate-700 dark:text-slate-300">{user.displayName || user.email || user.phoneNumber}</span>
                       </div>
-                      <p className="text-xs text-emerald-500 dark:text-emerald-400">შენი მონაცემები ავტომატურად შეინახება ღრუბელში</p>
                     </div>
                   ) : (
-                    // არ არის შესული — რეგისტრაციის შეთავაზება
                     <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
                       <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
                         <CloudOff className="w-5 h-5" />
                         <span className="font-bold text-sm">ღრუბლის სინქრონიზაცია</span>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        თუ გაივლი რეგისტრაციას, შენი მონაცემები შეინახება ღრუბელში და <strong className="text-slate-800 dark:text-slate-200">ყველა მოწყობილობაზე</strong> (ტელეფონი, ლეპტოპი, ტაბლეტი) სინქრონიზდება ავტომატურად.
+                        რეგისტრაცია = მონაცემები <strong className="text-slate-800 dark:text-slate-200">ყველა მოწყობილობაზე</strong>
                       </p>
 
-                      {/* Auth tabs */}
                       <div className="flex gap-1">
                         {([
                           { key: 'google' as const, label: 'Google', icon: '🔵' },
@@ -553,7 +442,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                               'flex-1 text-xs py-1.5 rounded-xl transition-colors',
                               authTab === t.key
                                 ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700/50'
-                                : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-transparent'
                             )}
                           >
                             <span className="text-sm">{t.icon}</span> {t.label}
@@ -565,14 +454,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                         <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-2 rounded-xl">{authError}</p>
                       )}
 
-                      {/* Google */}
                       {authTab === 'google' && (
-                        <Button
-                          className="w-full"
-                          disabled={authBusy}
+                        <Button className="w-full" disabled={authBusy}
                           onClick={async () => {
-                            setAuthError('');
-                            setAuthBusy(true);
+                            setAuthError(''); setAuthBusy(true);
                             try { await onSignInWithGoogle(); }
                             catch (e) { setAuthError(e instanceof Error ? e.message : 'შეცდომა'); }
                             finally { setAuthBusy(false); }
@@ -582,98 +467,67 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                         </Button>
                       )}
 
-                      {/* Email */}
                       {authTab === 'email' && (
                         <div className="space-y-2">
-                          <input
-                            type="email" placeholder="ელ-ფოსტა" value={authEmail}
+                          <input type="email" placeholder="ელ-ფოსტა" value={authEmail}
                             onChange={(e) => setAuthEmail(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
-                          />
-                          <input
-                            type="password" placeholder="პაროლი (6+ სიმბოლო)" value={authPassword}
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-blue-500" />
+                          <input type="password" placeholder="პაროლი (6+ სიმბოლო)" value={authPassword}
                             onChange={(e) => setAuthPassword(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
-                          />
-                          <Button
-                            className="w-full" disabled={authBusy || !authEmail || authPassword.length < 6}
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-blue-500" />
+                          <Button className="w-full" disabled={authBusy || !authEmail || authPassword.length < 6}
                             onClick={async () => {
-                              setAuthError('');
-                              setAuthBusy(true);
+                              setAuthError(''); setAuthBusy(true);
                               try {
                                 if (authIsSignUp) await onSignUpWithEmail(authEmail, authPassword);
                                 else await onSignInWithEmail(authEmail, authPassword);
-                              } catch (e) {
+                              } catch (e: unknown) {
                                 const msg = e instanceof Error ? e.message : 'შეცდომა';
-                                if (msg.includes('wrong-password') || msg.includes('invalid-credential')) setAuthError('არასწორი პაროლი');
-                                else if (msg.includes('user-not-found')) setAuthError('მომხმარებელი ვერ მოიძებნა');
-                                else if (msg.includes('email-already')) setAuthError('ეს ელ-ფოსტა უკვე რეგისტრირებულია');
-                                else setAuthError(msg);
+                                if (msg.includes('not-found') || msg.includes('invalid')) {
+                                  setAuthIsSignUp(true);
+                                  setAuthError('ანგარიში არ მოიძებნა — ხელახლა დააჭირე რეგისტრაციისთვის');
+                                } else { setAuthError(msg); }
                               } finally { setAuthBusy(false); }
-                            }}
-                          >
-                            📧 {authBusy ? 'იტვირთება...' : authIsSignUp ? 'რეგისტრაცია' : 'შესვლა'}
+                            }}>
+                            {authBusy ? '...' : authIsSignUp ? '📧 რეგისტრაცია' : '📧 შესვლა'}
                           </Button>
-                          <button
-                            onClick={() => { setAuthIsSignUp(!authIsSignUp); setAuthError(''); }}
-                            className="text-xs text-slate-500 dark:text-slate-400 underline w-full text-center"
-                          >
-                            {authIsSignUp ? 'უკვე მაქვს ანგარიში' : 'არ მაქვს ანგარიში — რეგისტრაცია'}
-                          </button>
                         </div>
                       )}
 
-                      {/* Phone */}
                       {authTab === 'phone' && (
                         <div className="space-y-2">
                           {!authConfirmResult ? (
                             <>
-                              <input
-                                type="tel" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)}
-                                placeholder="+995 5XX XXX XXX"
-                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-blue-500"
-                              />
-                              <Button
-                                className="w-full" disabled={authBusy || authPhone.length < 9}
+                              <input type="tel" placeholder="+995 5XX XXX XXX" value={authPhone}
+                                onChange={(e) => setAuthPhone(e.target.value)}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-blue-500" />
+                              <div id="recaptcha-container" />
+                              <Button className="w-full" disabled={authBusy || authPhone.length < 9}
                                 onClick={async () => {
-                                  setAuthError('');
-                                  setAuthBusy(true);
-                                  try {
-                                    const result = await onSendPhoneCode(authPhone, 'setup-recaptcha');
-                                    setAuthConfirmResult(result);
-                                  } catch (e) {
-                                    const msg = e instanceof Error ? e.message : 'შეცდომა';
-                                    if (msg.includes('not-allowed')) setAuthError('SMS ამ რეგიონში მიუწვდომელია');
-                                    else setAuthError(msg);
-                                  } finally { setAuthBusy(false); }
-                                }}
-                              >
-                                📱 {authBusy ? 'იგზავნება...' : 'კოდის გაგზავნა'}
+                                  setAuthError(''); setAuthBusy(true);
+                                  try { const r = await onSendPhoneCode(authPhone, 'recaptcha-container'); setAuthConfirmResult(r); }
+                                  catch (e) { setAuthError(e instanceof Error ? e.message : 'შეცდომა'); }
+                                  finally { setAuthBusy(false); }
+                                }}>
+                                {authBusy ? '...' : '📱 კოდის გაგზავნა'}
                               </Button>
                             </>
                           ) : (
                             <>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">SMS კოდი გამოგზავნილია</p>
-                              <input
-                                type="text" value={authSmsCode} onChange={(e) => setAuthSmsCode(e.target.value)}
-                                placeholder="6-ნიშნა კოდი" maxLength={6}
-                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm text-center tracking-widest outline-none focus:border-blue-500"
-                              />
-                              <Button
-                                className="w-full" disabled={authBusy || authSmsCode.length < 6}
+                              <input type="text" inputMode="numeric" placeholder="SMS კოდი" value={authSmsCode}
+                                onChange={(e) => setAuthSmsCode(e.target.value)}
+                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none focus:border-blue-500" />
+                              <Button className="w-full" disabled={authBusy || authSmsCode.length < 4}
                                 onClick={async () => {
-                                  setAuthError('');
-                                  setAuthBusy(true);
+                                  setAuthError(''); setAuthBusy(true);
                                   try { await onConfirmPhoneCode(authConfirmResult!, authSmsCode); }
-                                  catch { setAuthError('არასწორი კოდი'); }
+                                  catch (e) { setAuthError(e instanceof Error ? e.message : 'არასწორი კოდი'); }
                                   finally { setAuthBusy(false); }
-                                }}
-                              >
-                                {authBusy ? 'მოწმდება...' : 'დადასტურება'}
+                                }}>
+                                {authBusy ? '...' : '✓ დადასტურება'}
                               </Button>
                             </>
                           )}
-                          <div id="setup-recaptcha" />
                         </div>
                       )}
                     </div>
@@ -682,967 +536,465 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
               )}
 
               <div className="pt-2 space-y-3">
-                <Button onClick={() => setStep(1)} size="lg" className="text-lg px-10 py-6">
-                  {user ? 'დაწყება' : 'გაგრძელება რეგისტრაციის გარეშე'}
+                <Button onClick={() => setStep(1)} size="lg" className="text-lg px-10 py-6 w-full">
+                  {user ? '🚀 დაწყება' : 'გაგრძელება'}
                 </Button>
-                {!user && (
-                  <p className="text-muted-foreground/40 text-[10px]">
-                    რეგისტრაციის გარეშე მონაცემები მხოლოდ ამ მოწყობილობაზე შეინახება
-                  </p>
-                )}
-                <div>
-                  <Button variant="ghost" onClick={handleSkipSetup} className="text-sm text-muted-foreground hover:text-slate-800 dark:hover:text-slate-200">
-                    გამოტოვება — ხელით შევავსებ
-                  </Button>
-                </div>
+                <Button variant="ghost" onClick={handleSkipSetup} className="text-sm text-muted-foreground">
+                  გამოტოვება
+                </Button>
               </div>
-
             </CardContent>
           </Card>
         )}
 
-        {/* Step 1: შემოსავლის ტიპი */}
+        {/* === Step 1: შემოსავალი === */}
         {step === 1 && (
           <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
-            <CardHeader className="text-center">
-              <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 1/6</Badge>
-              <CardTitle className="text-2xl font-black">როგორ იღებ შემოსავალს?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-3 gap-3">
-                <Card
-                  className={cn(
-                    'cursor-pointer transition-all hover:scale-105 border-2',
-                    profile.incomeType === 'salary'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-border/80'
-                  )}
-                  onClick={() => {
-                    setProfile((p) => ({ ...p, incomeType: 'salary' }));
-                    setStep(2);
-                  }}
-                >
-                  <CardContent className="pt-5 pb-5 text-center">
-                    <Briefcase className="w-7 h-7 mx-auto mb-2 text-primary" />
-                    <h3 className="text-sm font-black">ხელფასი</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">ფიქსირებული</p>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={cn(
-                    'cursor-pointer transition-all hover:scale-105 border-2',
-                    profile.incomeType === 'freelance'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-border/80'
-                  )}
-                  onClick={() => {
-                    setProfile((p) => ({ ...p, incomeType: 'freelance' }));
-                    setStep(2);
-                  }}
-                >
-                  <CardContent className="pt-5 pb-5 text-center">
-                    <Rocket className="w-7 h-7 mx-auto mb-2 text-primary" />
-                    <h3 className="text-sm font-black">გამომუშავება</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">ფრილანსი</p>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  className={cn(
-                    'cursor-pointer transition-all hover:scale-105 border-2',
-                    profile.incomeType === 'both'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-border/80'
-                  )}
-                  onClick={() => {
-                    setProfile((p) => ({ ...p, incomeType: 'both' }));
-                    setStep(2);
-                  }}
-                >
-                  <CardContent className="pt-5 pb-5 text-center">
-                    <Layers className="w-7 h-7 mx-auto mb-2 text-primary" />
-                    <h3 className="text-sm font-black">ორივე</h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">ხელფასი + დანამატი</p>
-                  </CardContent>
-                </Card>
+            <CardContent className="pt-6 pb-6 space-y-5">
+              <div className="text-center">
+                <Badge variant="warning" className="mb-2 uppercase tracking-wider text-xs">1/3</Badge>
+                <CardTitle className="text-2xl font-black">შემოსავალი</CardTitle>
               </div>
 
-              <Button variant="secondary" onClick={() => setStep(0)} className="w-full mt-4">
-                <ArrowLeft className="w-4 h-4 mr-2" /> უკან
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              {/* ტიპის არჩევა */}
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { type: 'salary' as const, icon: <Briefcase className="w-5 h-5" />, label: 'ხელფასი' },
+                  { type: 'freelance' as const, icon: <Rocket className="w-5 h-5" />, label: 'გამომუშავება' },
+                  { type: 'both' as const, icon: <Layers className="w-5 h-5" />, label: 'ორივე' },
+                ]).map(({ type, icon, label }) => (
+                  <button
+                    key={type}
+                    onClick={() => setProfile((p) => ({ ...p, incomeType: type }))}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all',
+                      profile.incomeType === type
+                        ? 'border-primary bg-primary/10 scale-105'
+                        : 'border-border hover:border-border/80'
+                    )}
+                  >
+                    <span className="text-primary">{icon}</span>
+                    <span className="text-xs font-black">{label}</span>
+                  </button>
+                ))}
+              </div>
 
-        {/* Step 2: შემოსავლის დეტალები */}
-        {step === 2 && (
-          <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
-            <CardHeader className="text-center">
-              <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 2/6</Badge>
-              <CardTitle className="text-2xl font-black">
-                {profile.incomeType === 'salary' && 'ხელფასის დეტალები'}
-                {profile.incomeType === 'freelance' && 'გამომუშავების გეგმა'}
-                {profile.incomeType === 'both' && 'შემოსავლის დეტალები'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/* ხელფასი (salary + both) */}
+              {/* ხელფასი */}
               {needsSalary && (
-                <div className="space-y-4">
+                <div className="space-y-3 animate-fadeIn">
                   <div>
-                    <label className="text-sm text-muted-foreground mb-1.5 block">ხელფასი ({'\u20BE'})</label>
+                    <label className="text-sm text-muted-foreground mb-1 block">ხელფასი (₾)</label>
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="მაგ: 2000"
-                      value={salaryInput}
+                      type="text" inputMode="numeric" placeholder="მაგ: 2000"
+                      value={salaryInput} autoFocus
                       onChange={(e) => updateSalary(e.target.value.replace(/[^0-9]/g, ''))}
-                      autoFocus
-                      className={nativeInputClass}
+                      className={inputClass}
                     />
                   </div>
-
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">რამდენჯერ ერიცხება?</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <label className="text-xs text-muted-foreground mb-1.5 block">რამდენჯერ ერიცხება?</label>
+                    <div className="grid grid-cols-2 gap-1.5">
                       {([
-                        { value: 'monthly_1', label: 'თვეში 1-ჯერ' },
-                        { value: 'monthly_2', label: 'თვეში 2-ჯერ' },
-                        { value: 'biweekly', label: '2 კვირაში 1-ჯერ' },
-                        { value: 'weekly', label: 'კვირაში 1-ჯერ' },
-                      ] as { value: PayFrequency; label: string }[]).map((freq) => (
-                        <Button
-                          key={freq.value}
-                          variant="outline"
-                          onClick={() => setProfile((p) => ({ ...p, payFrequency: freq.value }))}
-                          className={cn(
-                            'h-auto py-2.5 text-sm font-bold',
-                            profile.payFrequency === freq.value
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : ''
+                        { value: 'monthly_1' as PayFrequency, label: 'თვეში 1-ჯერ' },
+                        { value: 'monthly_2' as PayFrequency, label: 'თვეში 2-ჯერ' },
+                        { value: 'biweekly' as PayFrequency, label: '2 კვირაში' },
+                        { value: 'weekly' as PayFrequency, label: 'კვირაში' },
+                      ]).map((f) => (
+                        <button key={f.value}
+                          onClick={() => setProfile((p) => ({ ...p, payFrequency: f.value }))}
+                          className={cn('py-2 rounded-xl border text-xs font-bold transition-all',
+                            profile.payFrequency === f.value ? 'border-primary bg-primary/10 text-primary' : 'border-border'
                           )}
                         >
-                          <Calendar className="w-3.5 h-3.5 mr-1.5" />
-                          {freq.label}
-                        </Button>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1.5 block">სამუშაო დღეები</label>
+                    <div className="flex gap-1">
+                      {WEEK_DAYS.map((wd) => (
+                        <button key={wd.value} onClick={() => toggleWorkDay(wd.value)}
+                          className={cn('flex-1 py-2 rounded-xl text-xs font-bold border transition-all',
+                            (profile.workDays || []).includes(wd.value)
+                              ? 'border-primary bg-primary/20 text-primary'
+                              : 'border-border text-muted-foreground'
+                          )}
+                        >
+                          {wd.label}
+                        </button>
                       ))}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* სამუშაო დღეები (salary + both) */}
-              {needsWorkDays && (
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">რომელ დღეებში მუშაობ?</label>
-                  <div className="flex gap-1.5">
-                    {WEEK_DAYS.map((wd) => (
-                      <button
-                        key={wd.value}
-                        onClick={() => toggleWorkDay(wd.value)}
-                        className={cn(
-                          'flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all',
-                          (profile.workDays || []).includes(wd.value)
-                            ? 'border-primary bg-primary/20 text-primary'
-                            : 'border-border bg-background/30 text-muted-foreground hover:border-border/80'
-                        )}
-                      >
-                        {wd.label}
-                      </button>
-                    ))}
-                  </div>
-                  {profile.salary > 0 && (
-                    <p className="text-xs text-muted-foreground/70 mt-2">
-                      {workDaysInMonth} სამუშაო დღე ამ თვეში · დღიურად: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{dailySalary}{'\u20BE'}</span>
-                    </p>
+              {/* ფრილანსი */}
+              {needsDailyTarget && (
+                <div className="animate-fadeIn">
+                  <label className="text-sm text-muted-foreground mb-1 block">
+                    {profile.incomeType === 'both' ? 'დღიური დანამატი (₾)' : 'დღიური გეგმა (₾)'}
+                  </label>
+                  <input
+                    type="text" inputMode="numeric" placeholder="მაგ: 150"
+                    value={dailyTargetInput}
+                    autoFocus={profile.incomeType === 'freelance'}
+                    onChange={(e) => updateDailyTarget(e.target.value.replace(/[^0-9]/g, ''))}
+                    className={inputClass}
+                  />
+                </div>
+              )}
+
+              {/* შეჯამება */}
+              {monthlyIncome > 0 && (
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-700/50 rounded-xl p-3 text-center">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">თვიური შემოსავალი</p>
+                  <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{monthlyIncome}₾</p>
+                  {dailyTarget > 0 && (
+                    <p className="text-xs text-emerald-500 dark:text-emerald-400">დღიურად: {dailyTarget}₾</p>
                   )}
                 </div>
               )}
 
-              {/* დანამატი / დღიური გეგმა (freelance + both) */}
-              {needsDailyTarget && (
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1.5 block">
-                    {profile.incomeType === 'both' ? 'დღიური დანამატის გეგმა' : 'საშუალო დღიური გეგმა'} ({'\u20BE'})
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="მაგ: 150"
-                    value={dailyTargetInput}
-                    onChange={(e) => updateDailyTarget(e.target.value.replace(/[^0-9]/g, ''))}
-                    autoFocus={profile.incomeType === 'freelance'}
-                    className={nativeInputClass}
-                  />
-                  <p className="text-xs text-muted-foreground/60 mt-1.5">
-                    {profile.incomeType === 'both'
-                      ? 'ხელფასის გარდა რამდენის გამომუშავებას გეგმავ დღეში?'
-                      : 'რამდენის გამომუშავებას გეგმავ დღეში?'
-                    }
-                  </p>
-                </div>
-              )}
+              <div className="flex gap-3 pt-1">
+                <Button variant="secondary" onClick={() => setStep(0)} className="flex-1">
+                  <ArrowLeft className="w-4 h-4 mr-1" /> უკან
+                </Button>
+                <Button onClick={() => setStep(2)} className="flex-[2]" disabled={!canProceedStep1()}>
+                  შემდეგი <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-              {/* დამატებითი შემოსავალი */}
-              <div className="border-t border-border pt-4">
-                <h3 className="text-sm font-bold mb-3">დამატებითი შემოსავალი (არასავალდებულო)</h3>
-                <p className="text-xs text-muted-foreground/60 mb-3">მაგ: ქირა, მეორე სამსახური, პროცენტი...</p>
+        {/* === Step 2: ხარჯები (ყველაფერი ერთ ეკრანზე) === */}
+        {step === 2 && (
+          <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
+            <CardContent className="pt-6 pb-6 space-y-3">
+              <div className="text-center">
+                <Badge variant="warning" className="mb-2 uppercase tracking-wider text-xs">2/3</Badge>
+                <CardTitle className="text-2xl font-black">ყოველთვიური ხარჯები</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">დაამატე რაც გაქვს — დანარჩენს შემდეგ</p>
+              </div>
 
-                {profile.additionalIncomes.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {profile.additionalIncomes.map((ai) => (
-                      <div key={ai.id} className="flex justify-between items-center p-2.5 rounded-xl border border-border bg-card">
-                        <div>
-                          <span className="text-sm font-bold">{ai.name}</span>
-                          <Badge variant="success" className="ml-2">{ai.amount}{'\u20BE'}</Badge>
-                          <span className="text-muted-foreground text-xs ml-1">
-                            /{ai.frequency === 'monthly' ? 'თვე' : ai.frequency === 'weekly' ? 'კვირა' : 'დღე'}
-                          </span>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeAdditionalIncome(ai.id)}>
-                          <X className="w-4 h-4" />
-                        </Button>
+              {/* === ბილები === */}
+              <div className="rounded-xl border border-border overflow-hidden">
+                <button onClick={() => toggleSection('bills')}
+                  className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="text-sm font-bold flex items-center gap-2">
+                    📅 გადასახადები
+                    {Object.keys(uniqueBills).length > 0 && (
+                      <Badge variant="default" className="text-[10px]">{Object.values(uniqueBills).reduce((s, a) => s + a, 0)}₾</Badge>
+                    )}
+                  </span>
+                  {openSection === 'bills' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+                {openSection === 'bills' && (
+                  <div className="p-3 space-y-2 border-t border-border animate-fadeIn">
+                    {/* სწრაფი ღილაკები */}
+                    <div className="flex flex-wrap gap-1">
+                      {BILL_PRESETS.filter((p) => !uniqueBills[p.name]).map((p) => (
+                        <button key={p.name}
+                          onClick={() => setNewBillName(p.name)}
+                          className={cn('px-2.5 py-1 rounded-full text-xs font-bold border transition-all',
+                            newBillName === p.name ? 'border-primary bg-primary/10 text-primary' : 'border-border'
+                          )}
+                        >
+                          {p.icon} {p.name}
+                        </button>
+                      ))}
+                    </div>
+                    {/* ფორმა */}
+                    <div className="flex gap-1.5">
+                      <Input type="text" placeholder="სახელი" value={newBillName}
+                        onChange={(e) => setNewBillName(e.target.value)} className="flex-1 h-9 text-sm" />
+                      <input type="text" inputMode="numeric" placeholder="₾" value={newBillAmount}
+                        onChange={(e) => setNewBillAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-16 h-9 rounded-xl border border-border bg-background/50 px-2 text-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      <input type="text" inputMode="numeric" placeholder="დღე" value={newBillDueDay}
+                        onChange={(e) => setNewBillDueDay(e.target.value.replace(/[^0-9]/g, ''))}
+                        onKeyDown={(e) => { if (e.key === 'Enter') addBill(); }}
+                        className="w-12 h-9 rounded-xl border border-border bg-background/50 px-2 text-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      <Button size="icon" className="h-9 w-9 shrink-0" onClick={() => addBill()} disabled={!newBillName.trim() || !newBillAmount}>
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {/* სია */}
+                    {Object.entries(uniqueBills).map(([name, amount]) => (
+                      <div key={name} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                        <span className="text-sm">{name} — <strong>{amount}₾</strong>/თვე</span>
+                        <button onClick={() => removeBillGroup(name)} className="text-red-400 hover:text-red-600">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
-
-                <div className="flex gap-2">
-                  <Input type="text" placeholder="სახელი" value={newAiName} onChange={(e) => setNewAiName(e.target.value)} className="flex-1" />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={'\u20BE'}
-                    value={newAiAmount}
-                    onChange={(e) => setNewAiAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                    className="w-20 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                  />
-                  <select
-                    value={newAiFrequency}
-                    onChange={(e) => setNewAiFrequency(e.target.value as 'monthly' | 'weekly' | 'daily')}
-                    className="bg-background/50 px-2 rounded-xl border border-border text-sm outline-none focus:ring-2 focus:ring-ring transition-colors"
-                  >
-                    <option value="monthly">თვე</option>
-                    <option value="weekly">კვირა</option>
-                    <option value="daily">დღე</option>
-                  </select>
-                  <Button variant="success" size="icon" onClick={addAdditionalIncome}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> უკან
-                </Button>
-                <Button
-                  onClick={() => setStep(3)}
-                  className="flex-[2]"
-                  disabled={!canProceedStep2()}
+              {/* === კომუნალური === */}
+              <div className="rounded-xl border border-border overflow-hidden">
+                <button onClick={() => toggleSection('utilities')}
+                  className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
-                  შემდეგი
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: ყოველთვიური გადასახადი */}
-        {step === 3 && (
-          <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
-            <CardHeader className="text-center">
-              <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 3/6</Badge>
-              <CardTitle className="text-2xl font-black">ყოველთვიური გადასახადი</CardTitle>
-              <CardDescription>აირჩიე კატეგორია და დაამატე შენი ხარჯები</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/* დამატებული ბილების სია */}
-              {Object.keys(uniqueBills).length > 0 && (
-                <div className="space-y-1.5">
-                  {Object.entries(uniqueBills).map(([name, amount]) => {
-                    const cat = BILL_CATEGORIES.find((c) => name.startsWith(c.label));
-                    const color = cat?.color || '#64748b';
-                    return (
-                      <div key={name} className="flex justify-between items-center p-2.5 rounded-xl border" style={{ borderColor: `${color}40`, backgroundColor: `${color}08` }}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{cat?.icon || '📝'}</span>
-                          <div>
-                            <span className="font-bold text-sm" style={{ color }}>{name}</span>
-                            <span className="text-xs text-muted-foreground ml-2">{amount}{'\u20BE'}/თვე</span>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => removeBillGroup(name)}>
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                  <div className="text-right text-sm pt-1">
-                    <span className="text-muted-foreground">სულ: </span>
-                    <span className="text-primary font-bold">{monthlyBillsTotal}{'\u20BE'}/თვე</span>
-                  </div>
-                </div>
-              )}
-
-              {/* კატეგორიის არჩევა */}
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">აირჩიე კატეგორია:</p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {BILL_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.key}
-                      type="button"
-                      onClick={() => selectBillCategory(cat.key)}
-                      className={cn(
-                        'flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all text-center',
-                        selectedBillCategory === cat.key
-                          ? 'scale-105'
-                          : 'border-border/50 hover:border-border opacity-70 hover:opacity-100'
-                      )}
-                      style={{
-                        borderColor: selectedBillCategory === cat.key ? cat.color : undefined,
-                        backgroundColor: selectedBillCategory === cat.key ? `${cat.color}15` : undefined,
-                      }}
-                    >
-                      <span className="text-lg">{cat.icon}</span>
-                      <span className="text-[10px] font-bold leading-tight" style={{ color: selectedBillCategory === cat.key ? cat.color : undefined }}>
-                        {cat.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* სხვა — ხელით სახელი */}
-              {selectedBillCategory === 'სხვა' && (
-                <Input
-                  type="text"
-                  placeholder="სახელი (მაგ: პარკინგი, ბაღი...)"
-                  value={newBillName}
-                  onChange={(e) => setNewBillName(e.target.value)}
-                  className="h-9 text-sm"
-                  autoFocus
-                />
-              )}
-
-              {/* თანხა და გადახდის დღე */}
-              {selectedBillCategory && (
-                <div className="space-y-2 animate-fadeIn">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="თანხა ₾"
-                      value={newBillAmount}
-                      onChange={(e) => setNewBillAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                      onKeyDown={(e) => { if (e.key === 'Enter') addBill(); }}
-                      autoFocus
-                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    />
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="გადახდის დღე"
-                      value={newBillDueDay}
-                      onChange={(e) => setNewBillDueDay(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-36 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    />
-                  </div>
-                  <Button
-                    onClick={addBill}
-                    disabled={!newBillName.trim() || !newBillAmount}
-                    className="w-full h-9"
-                    variant="default"
-                  >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    დამატება
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-1" /> უკან
-                </Button>
-                <Button variant="ghost" onClick={() => setStep(4)} className="text-muted-foreground text-xs">
-                  არ მაქვს
-                </Button>
-                <Button onClick={() => setStep(4)} className="flex-[2]">
-                  {Object.keys(uniqueBills).length === 0 ? 'გამოტოვება' : 'შემდეგი'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 4: კომუნალურები */}
-        {step === 4 && (
-          <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
-            <CardHeader className="text-center">
-              <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 4/6</Badge>
-              <CardTitle className="text-2xl font-black">კომუნალურები ⚡</CardTitle>
-              <CardDescription>საშუალოდ რამდენს იხდი თვეში?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-3">
-                {UTILITY_TYPES.map((util) => {
-                  const isSelected = utilityAmounts[util.key] !== undefined;
-                  return (
-                    <div key={util.key} className="space-y-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUtilityAmounts((prev) => {
-                            const next = { ...prev };
-                            if (next[util.key] !== undefined) {
-                              delete next[util.key];
-                            } else {
-                              next[util.key] = '';
-                            }
-                            return next;
-                          });
-                        }}
-                        className={cn(
-                          'w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left',
-                          isSelected ? 'scale-[1.01]' : 'border-border/50 opacity-60 hover:opacity-100'
-                        )}
-                        style={{
-                          borderColor: isSelected ? util.color : undefined,
-                          backgroundColor: isSelected ? `${util.color}12` : undefined,
-                        }}
-                      >
-                        <span className="text-xl">{util.icon}</span>
-                        <span className="text-sm font-bold flex-1" style={{ color: isSelected ? util.color : undefined }}>
-                          {util.label}
-                        </span>
-                        {isSelected && (
-                          <Check className="w-4 h-4" style={{ color: util.color }} />
-                        )}
-                      </button>
-                      {isSelected && (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder={`${util.label} — საშუალო თანხა ₾`}
+                  <span className="text-sm font-bold flex items-center gap-2">
+                    ⚡ კომუნალური
+                    {utilityTotal > 0 && <Badge variant="default" className="text-[10px]">{utilityTotal}₾</Badge>}
+                  </span>
+                  {openSection === 'utilities' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+                {openSection === 'utilities' && (
+                  <div className="p-3 space-y-2 border-t border-border animate-fadeIn">
+                    {UTILITY_TYPES.map((util) => (
+                      <div key={util.key} className="flex items-center gap-2">
+                        <span className="text-lg w-7 text-center">{util.icon}</span>
+                        <span className="text-xs font-bold flex-1" style={{ color: util.color }}>{util.label}</span>
+                        <input type="text" inputMode="numeric" placeholder="₾/თვე"
                           value={utilityAmounts[util.key] || ''}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, '');
-                            setUtilityAmounts((prev) => ({ ...prev, [util.key]: val }));
-                          }}
-                          autoFocus
-                          className="w-full h-10 rounded-xl border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                          style={{ borderColor: `${util.color}60` }}
+                          onChange={(e) => setUtilityAmounts((prev) => ({ ...prev, [util.key]: e.target.value.replace(/[^0-9]/g, '') }))}
+                          className="w-20 h-8 rounded-lg border border-border bg-background/50 px-2 text-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {utilityTotal > 0 && (
-                <div className="bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-700/50 rounded-xl p-3 text-center">
-                  <p className="text-xs text-teal-600 dark:text-teal-400">სავარაუდო კომუნალური თვეში:</p>
-                  <p className="text-2xl font-black text-teal-700 dark:text-teal-300">{utilityTotal}₾</p>
-                </div>
-              )}
-
-              <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-700/50 rounded-xl p-2.5 text-[11px] text-blue-600 dark:text-blue-400">
-                📌 კომუნალურები ცალკე ტაბში გამოჩნდება. კალენდრიდან გადახდისას ავტომატურად მოინიშნება.
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button variant="secondary" onClick={() => setStep(3)} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-1" /> უკან
-                </Button>
-                <Button variant="ghost" onClick={() => setStep(5)} className="text-muted-foreground text-xs">
-                  არ მაქვს
-                </Button>
-                <Button onClick={() => setStep(5)} className="flex-[2]">
-                  {Object.keys(utilityAmounts).length === 0 ? 'გამოტოვება' : 'შემდეგი'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 5: ბანკები / მიკროსაფინანსო */}
-        {step === 5 && (
-          <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
-            <CardHeader className="text-center">
-              <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 5/6</Badge>
-              <CardTitle className="text-2xl font-black flex items-center justify-center gap-2">
-                <Landmark className="w-6 h-6" /> ბანკები / მიკროსაფინანსო
-              </CardTitle>
-              <CardDescription>სესხი, განვადება, საკრედიტო ბარათი ან ლობარდი?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-
-              {/* ===== ბანკის სექცია ===== */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-black flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                  🏦 საბანკო პროდუქტები
-                </h3>
-
-                {/* დამატებული ბანკის პროდუქტები */}
-                {bankItems.length > 0 && (
-                  <div className="space-y-1.5">
+              {/* === ბანკი === */}
+              <div className="rounded-xl border border-border overflow-hidden">
+                <button onClick={() => toggleSection('bank')}
+                  className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="text-sm font-bold flex items-center gap-2">
+                    🏦 სესხი / განვადება
+                    {bankItems.length > 0 && <Badge variant="default" className="text-[10px]">{bankItems.length}</Badge>}
+                  </span>
+                  {openSection === 'bank' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+                {openSection === 'bank' && (
+                  <div className="p-3 space-y-2 border-t border-border animate-fadeIn">
+                    {/* დამატებულები */}
                     {bankItems.map((item, idx) => {
                       const typeInfo = BANK_PRODUCT_TYPES.find((t) => t.key === item.type);
-                      const remaining = item.totalMonths - item.paidMonths;
                       return (
-                        <div key={idx} className="flex justify-between items-center p-2.5 rounded-xl border" style={{ borderColor: `${typeInfo?.color}40`, backgroundColor: `${typeInfo?.color}08` }}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{typeInfo?.icon}</span>
-                            <div>
-                              <span className="font-bold text-sm" style={{ color: typeInfo?.color }}>{typeInfo?.label}</span>
-                              {item.name && <span className="text-[10px] text-muted-foreground ml-1">· {item.name}</span>}
-                              <div className="text-[10px] text-muted-foreground">
-                                ძირი: <span className="text-red-600 dark:text-red-400 font-bold">{item.principal}₾</span>
-                                {' · '}თვეში: <span className="text-orange-600 dark:text-orange-400 font-bold">{item.monthlyInterest}₾</span>
-                                {' · '}{item.totalMonths} თვე
-                                {item.paidMonths > 0 && <> · გადახდილი: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{item.paidMonths} თვე</span></>}
-                                {remaining > 0 && <> · დარჩა: <span className="text-blue-600 dark:text-blue-400 font-bold">{remaining} თვე</span></>}
-                              </div>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => removeBankItem(idx)}>
+                        <div key={idx} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                          <span className="text-xs">{typeInfo?.icon} {typeInfo?.label}{item.name ? `: ${item.name}` : ''} — <strong>{item.principal}₾</strong> · {item.monthlyInterest}₾/თვე</span>
+                          <button onClick={() => setBankItems((p) => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600">
                             <X className="w-3.5 h-3.5" />
-                          </Button>
+                          </button>
                         </div>
                       );
                     })}
-                  </div>
-                )}
-
-                {/* ტიპის არჩევა */}
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">აირჩიე ტიპი:</p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {BANK_PRODUCT_TYPES.map((type) => (
-                      <button
-                        key={type.key}
-                        type="button"
-                        onClick={() => setBankType(bankType === type.key ? null : type.key)}
-                        className={cn(
-                          'flex items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-left',
-                          bankType === type.key ? 'scale-[1.02]' : 'border-border/50 opacity-60 hover:opacity-100'
-                        )}
-                        style={{
-                          borderColor: bankType === type.key ? type.color : undefined,
-                          backgroundColor: bankType === type.key ? `${type.color}15` : undefined,
-                        }}
-                      >
-                        <span className="text-lg">{type.icon}</span>
-                        <span className="text-[10px] font-bold" style={{ color: bankType === type.key ? type.color : undefined }}>{type.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ბანკის ფორმა */}
-                {bankType && (
-                  <div className="space-y-2 animate-fadeIn">
-                    <Input type="text" placeholder={bankType === 'სხვა' ? 'სესხის სახელი *' : 'დამატებითი სახელი (არასავალდ.)'} value={bankName} onChange={(e) => setBankName(e.target.value)} className="h-9 text-sm" autoFocus={bankType === 'სხვა'} />
-                    <div className="flex gap-2">
-                      <input type="text" inputMode="numeric" placeholder="ძირი თანხა ₾ *" value={bankPrincipal}
-                        onChange={(e) => setBankPrincipal(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                      />
-                      <input type="text" inputMode="numeric" placeholder="თვიური გადასახადი ₾ *" value={bankInterest}
-                        onChange={(e) => setBankInterest(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                      />
+                    {/* ტიპი */}
+                    <div className="flex flex-wrap gap-1">
+                      {BANK_PRODUCT_TYPES.slice(0, 6).map((type) => (
+                        <button key={type.key}
+                          onClick={() => setBankType(bankType === type.key ? null : type.key)}
+                          className={cn('px-2 py-1 rounded-full text-[10px] font-bold border transition-all',
+                            bankType === type.key ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-border'
+                          )}
+                        >
+                          {type.icon} {type.label}
+                        </button>
+                      ))}
                     </div>
-                    <input type="text" inputMode="numeric" placeholder="გადახდის დღე (1-31) *" value={bankPayDay}
-                      onChange={(e) => setBankPayDay(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    />
-                    <div className="flex gap-2">
-                      <input type="text" inputMode="numeric" placeholder="რამდენთვიანია სესხი *" value={bankTotalMonths}
-                        onChange={(e) => setBankTotalMonths(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                      />
-                      <input type="text" inputMode="numeric" placeholder="რამდენი თვეა იხდი" value={bankPaidMonths}
-                        onChange={(e) => setBankPaidMonths(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                      />
-                    </div>
-                    {/* ჯარიმის პარამეტრები */}
-                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-700/50 rounded-xl p-2.5 space-y-2">
-                      <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">⚠️ ჯარიმის პარამეტრები</p>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground mb-0.5 block">ფიქს. ჯარიმა ₾</label>
-                          <input type="text" inputMode="decimal" value={bankLateFee}
-                            onChange={(e) => setBankLateFee(e.target.value.replace(/[^0-9.]/g, ''))}
-                            className="w-full h-9 rounded-lg border border-red-300 dark:border-red-700 bg-background/50 px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-colors"
-                          />
+                    {bankType && (
+                      <div className="space-y-1.5 animate-fadeIn">
+                        <Input type="text" placeholder="სახელი (არასავალდ.)" value={bankName}
+                          onChange={(e) => setBankName(e.target.value)} className="h-8 text-xs" />
+                        <div className="flex gap-1.5">
+                          <input type="text" inputMode="numeric" placeholder="ძირი ₾" value={bankPrincipal}
+                            onChange={(e) => setBankPrincipal(e.target.value.replace(/[^0-9]/g, ''))}
+                            className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                          <input type="text" inputMode="numeric" placeholder="თვეში ₾" value={bankInterest}
+                            onChange={(e) => setBankInterest(e.target.value.replace(/[^0-9]/g, ''))}
+                            className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         </div>
-                        <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground mb-0.5 block">დღიური პენალტი %</label>
-                          <input type="text" inputMode="decimal" value={bankDailyPenalty}
-                            onChange={(e) => setBankDailyPenalty(e.target.value.replace(/[^0-9.]/g, ''))}
-                            className="w-full h-9 rounded-lg border border-red-300 dark:border-red-700 bg-background/50 px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 transition-colors"
-                          />
+                        <div className="flex gap-1.5">
+                          <input type="text" inputMode="numeric" placeholder="დღე (1-31)" value={bankPayDay}
+                            onChange={(e) => setBankPayDay(e.target.value.replace(/[^0-9]/g, ''))}
+                            className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                          <input type="text" inputMode="numeric" placeholder="სულ თვე" value={bankTotalMonths}
+                            onChange={(e) => setBankTotalMonths(e.target.value.replace(/[^0-9]/g, ''))}
+                            className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                          <input type="text" inputMode="numeric" placeholder="გადახდილი" value={bankPaidMonths}
+                            onChange={(e) => setBankPaidMonths(e.target.value.replace(/[^0-9]/g, ''))}
+                            className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         </div>
-                      </div>
-                      <p className="text-[10px] text-red-500 dark:text-red-400/70">1 დღე = მხოლოდ {bankLateFee}₾ · 7 დღე = {bankLateFee}₾ + {((parseFloat(bankDailyPenalty) || 0) * (parseInt(bankPrincipal) || 0) / 100 * 6).toFixed(0)}₾ პენალტი</p>
-                    </div>
-                    {/* კალკულაციის პანელი */}
-                    {(() => {
-                      const principal = parseInt(bankPrincipal) || 0;
-                      const monthly = parseInt(bankInterest) || 0;
-                      const totalMonths = parseInt(bankTotalMonths) || 0;
-                      const paidMonths = parseInt(bankPaidMonths) || 0;
-
-                      if (!principal || !monthly || !totalMonths) return null;
-
-                      // ეფექტური პროცენტის გამოთვლა
-                      const totalPaid = monthly * totalMonths;
-                      const totalInterest = totalPaid - principal;
-                      const years = totalMonths / 12;
-                      const annualEffective = totalInterest > 0 ? (totalInterest / principal) * 100 / years : 0;
-                      const remaining = Math.max(0, totalMonths - paidMonths);
-
-                      return (
-                        <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-800/50 dark:to-blue-900/20 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2 animate-fadeIn">
-                          {/* მთავარი ინფო */}
-                          <div className="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">ძირი თანხა</p>
-                              <p className="text-sm font-black text-slate-800 dark:text-slate-200">{principal.toLocaleString()}₾</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">თვეში</p>
-                              <p className="text-sm font-black text-orange-600 dark:text-orange-400">{monthly.toLocaleString()}₾</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] text-muted-foreground">ვადა</p>
-                              <p className="text-sm font-black text-slate-800 dark:text-slate-200">{totalMonths} თვე</p>
-                            </div>
-                          </div>
-
-                          <div className="border-t border-slate-200 dark:border-slate-700" />
-
-                          {/* ეფექტური პროცენტი */}
-                          <div className="text-center py-1">
-                            <p className="text-[10px] text-muted-foreground">ეფექტური წლიური პროცენტი</p>
-                            <p className="text-2xl font-black text-red-600 dark:text-red-400">{annualEffective.toFixed(1)}%</p>
-                          </div>
-
-                          <div className="border-t border-slate-200 dark:border-slate-700" />
-
-                          {/* ჯამები */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">სულ გადაიხდი:</span>
-                              <span className="font-bold text-slate-700 dark:text-slate-300">{totalPaid.toLocaleString()}₾</span>
-                            </div>
-                            {totalInterest > 0 && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">აქედან პროცენტი:</span>
-                                <span className="font-bold text-red-600 dark:text-red-400">{totalInterest.toLocaleString()}₾</span>
-                              </div>
-                            )}
-                            {remaining > 0 && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">დარჩენილია:</span>
-                                <span className="font-bold text-blue-600 dark:text-blue-400">
-                                  {Math.floor(remaining / 12) > 0 ? `${Math.floor(remaining / 12)} წელი ${remaining % 12} თვე` : `${remaining} თვე`}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    <Button onClick={addBankItem} className="w-full h-9" variant="default">
-                      <Plus className="w-4 h-4 mr-1.5" /> დამატება
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* ===== გამყოფი ===== */}
-              <div className="border-t border-border" />
-
-              {/* ===== ლობარდის სექცია ===== */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-black flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
-                  🏪 ლობარდი / მიკროსაფინანსო
-                </h3>
-
-                {lombardItems.length > 0 && (
-                  <div className="space-y-1.5">
-                    {lombardItems.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/8">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                          <div>
-                            <span className="font-bold text-sm text-amber-700 dark:text-amber-300">{item.itemName}</span>
-                            {item.contractNumber && <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-1.5">#{item.contractNumber}</span>}
-                            <div className="text-[10px] text-muted-foreground">
-                              ძირი: <span className="text-red-600 dark:text-red-400 font-bold">{item.principal}₾</span>
-                              {' · '}%/თვე: <span className="text-orange-600 dark:text-orange-400 font-bold">{item.monthlyInterest}₾</span>
-                              {' · '}გადახდა: <span className="text-blue-600 dark:text-blue-400">{item.paymentDay} რიცხვი</span>
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => removeLombardItem(idx)}>
-                          <X className="w-3.5 h-3.5" />
+                        <Button onClick={addBankItem} size="sm" className="w-full h-8 text-xs" disabled={!bankPrincipal || !bankInterest}>
+                          <Plus className="w-3 h-3 mr-1" /> დამატება
                         </Button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
-                <div className="space-y-2">
-                  <Input type="text" placeholder="ნივთის დასახელება *" value={lombItemName} onChange={(e) => setLombItemName(e.target.value)} className="h-9 text-sm" />
-                  <div className="flex gap-2">
-                    <input type="text" inputMode="numeric" placeholder="ძირი თანხა ₾ *" value={lombPrincipal}
-                      onChange={(e) => setLombPrincipal(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    />
-                    <input type="text" inputMode="numeric" placeholder="% თვეში ₾ *" value={lombInterest}
-                      onChange={(e) => setLombInterest(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    />
+              </div>
+
+              {/* === ლომბარდი === */}
+              <div className="rounded-xl border border-border overflow-hidden">
+                <button onClick={() => toggleSection('lombard')}
+                  className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="text-sm font-bold flex items-center gap-2">
+                    🏪 ლომბარდი
+                    {lombardItems.length > 0 && <Badge variant="default" className="text-[10px]">{lombardItems.length}</Badge>}
+                  </span>
+                  {openSection === 'lombard' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+                {openSection === 'lombard' && (
+                  <div className="p-3 space-y-2 border-t border-border animate-fadeIn">
+                    {lombardItems.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                        <span className="text-xs">🏪 {item.itemName} — <strong>{item.principal}₾</strong> · {item.monthlyInterest}₾/თვე</span>
+                        <button onClick={() => setLombardItems((p) => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="space-y-1.5">
+                      <Input type="text" placeholder="ნივთის სახელი" value={lombItemName}
+                        onChange={(e) => setLombItemName(e.target.value)} className="h-8 text-xs" />
+                      <div className="flex gap-1.5">
+                        <input type="text" inputMode="numeric" placeholder="ძირი ₾" value={lombPrincipal}
+                          onChange={(e) => setLombPrincipal(e.target.value.replace(/[^0-9]/g, ''))}
+                          className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                        <input type="text" inputMode="numeric" placeholder="% თვეში ₾" value={lombInterest}
+                          onChange={(e) => setLombInterest(e.target.value.replace(/[^0-9]/g, ''))}
+                          className="flex-1 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                        <input type="text" inputMode="numeric" placeholder="დღე" value={lombPayDay}
+                          onChange={(e) => setLombPayDay(e.target.value.replace(/[^0-9]/g, ''))}
+                          onKeyDown={(e) => { if (e.key === 'Enter') addLombardItem(); }}
+                          className="w-14 h-8 rounded-lg border border-border bg-background/50 px-2 text-xs text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                      </div>
+                      <Button onClick={addLombardItem} size="sm" className="w-full h-8 text-xs" disabled={!lombItemName.trim() || !lombPrincipal || !lombInterest}>
+                        <Plus className="w-3 h-3 mr-1" /> დამატება
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <input type="text" inputMode="numeric" placeholder="გადახდის დღე (1-31) *" value={lombPayDay}
-                      onChange={(e) => setLombPayDay(e.target.value.replace(/[^0-9]/g, ''))}
-                      onKeyDown={(e) => { if (e.key === 'Enter') addLombardItem(); }}
-                      className="flex-1 h-10 rounded-xl border border-border bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                    />
-                    <Input type="text" placeholder="ხელშეკრულება # (არასავალდ.)" value={lombContract} onChange={(e) => setLombContract(e.target.value)} className="flex-1 h-9 text-sm" />
-                  </div>
-                  <Button onClick={addLombardItem} className="w-full h-9" variant="default">
-                    <Plus className="w-4 h-4 mr-1.5" /> ლობარდის დამატება
-                  </Button>
+                )}
+              </div>
+
+              {/* ჯამი */}
+              {totalMonthlyExpenses > 0 && (
+                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-700/50 rounded-xl p-2.5 text-center">
+                  <p className="text-xs text-red-600 dark:text-red-400">სულ ყოველთვიური ხარჯი</p>
+                  <p className="text-xl font-black text-red-700 dark:text-red-300">{totalMonthlyExpenses}₾</p>
                 </div>
-              </div>
+              )}
 
-              <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-700/50 rounded-xl p-2.5 text-[11px] text-blue-600 dark:text-blue-400 space-y-0.5">
-                <p>📌 ძირი თანხა ავტომატურად დაემატება <strong>ვალებში</strong></p>
-                <p>📌 ყოველთვიური პროცენტი/გადასახადი დაემატება <strong>ყოველთვიურ გადასახადებში</strong></p>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button variant="secondary" onClick={() => setStep(4)} className="flex-1">
+              <div className="flex gap-3 pt-1">
+                <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
                   <ArrowLeft className="w-4 h-4 mr-1" /> უკან
                 </Button>
-                <Button variant="ghost" onClick={() => setStep(6)} className="text-muted-foreground text-xs">
-                  არ მაქვს
-                </Button>
-                <Button onClick={() => setStep(6)} className="flex-[2]">
-                  {bankItems.length === 0 && lombardItems.length === 0 ? 'გამოტოვება' : 'შემდეგი'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button onClick={() => setStep(3)} className="flex-[2]">
+                  {totalMonthlyExpenses === 0 ? 'გამოტოვება' : 'შემდეგი'} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 6: შეჯამება */}
-        {step === 6 && (
+        {/* === Step 3: მზადაა === */}
+        {step === 3 && (
           <Card className="border-border/50 bg-card/80 backdrop-blur animate-fadeIn">
-            <CardHeader className="text-center">
-              <Badge variant="warning" className="mx-auto mb-2 uppercase tracking-wider text-xs">ნაბიჯი 6/6</Badge>
-              <CardTitle className="text-2xl font-black">შეჯამება</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Card className="border-border/50">
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">შემოსავლის ტიპი:</span>
-                    <span className="font-bold flex items-center gap-1.5">
-                      {profile.incomeType === 'salary' && <><Briefcase className="w-4 h-4" /> ხელფასი</>}
-                      {profile.incomeType === 'freelance' && <><Rocket className="w-4 h-4" /> გამომუშავება</>}
-                      {profile.incomeType === 'both' && <><Layers className="w-4 h-4" /> ხელფასი + დანამატი</>}
+            <CardContent className="pt-6 pb-6 space-y-5">
+              <div className="text-center">
+                <Badge variant="warning" className="mb-2 uppercase tracking-wider text-xs">3/3</Badge>
+                <CardTitle className="text-2xl font-black">მზადაა! 🎉</CardTitle>
+              </div>
+
+              {/* მთავარი ციფრები */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 p-4 text-center">
+                  <p className="text-emerald-600 dark:text-emerald-400 text-xs mb-1">შემოსავალი</p>
+                  <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{monthlyIncome}₾</p>
+                  <p className="text-emerald-500 text-[10px] mt-0.5">თვეში</p>
+                </div>
+                <div className="rounded-xl border-2 border-primary/50 bg-primary/10 p-4 text-center">
+                  <p className="text-primary/80 text-xs mb-1">ბიუჯეტი</p>
+                  <p className="text-3xl font-black text-primary">{dailyBudget}₾</p>
+                  <p className="text-primary/50 text-[10px] mt-0.5">დღეში</p>
+                </div>
+              </div>
+
+              {/* დეტალები */}
+              <div className="space-y-1.5 text-sm">
+                {needsSalary && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">💼 ხელფასი:</span>
+                    <span className="font-bold text-emerald-600">{profile.salary}₾</span>
+                  </div>
+                )}
+                {needsDailyTarget && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">📊 დღიური გეგმა:</span>
+                    <span className="font-bold text-emerald-600">{dailyTarget}₾</span>
+                  </div>
+                )}
+                {Object.keys(uniqueBills).length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">📅 გადასახადები:</span>
+                    <span className="font-bold text-red-500">{Object.values(uniqueBills).reduce((s, a) => s + a, 0)}₾/თვე</span>
+                  </div>
+                )}
+                {utilityTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">⚡ კომუნალური:</span>
+                    <span className="font-bold text-red-500">{utilityTotal}₾/თვე</span>
+                  </div>
+                )}
+                {bankItems.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">🏦 სესხები:</span>
+                    <span className="font-bold text-red-500">{bankMonthlyTotal}₾/თვე</span>
+                  </div>
+                )}
+                {lombardItems.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">🏪 ლომბარდი:</span>
+                    <span className="font-bold text-red-500">{lombardMonthlyTotal}₾/თვე</span>
+                  </div>
+                )}
+                {monthlyIncome > 0 && (
+                  <div className="flex justify-between pt-1.5 border-t border-border">
+                    <span className="text-muted-foreground font-bold">თავისუფალი:</span>
+                    <span className={cn('font-black', monthlyIncome - totalMonthlyExpenses >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      {monthlyIncome - totalMonthlyExpenses}₾/თვე
                     </span>
                   </div>
-
-                  {needsSalary && (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">ხელფასი:</span>
-                        <Badge variant="success" className="text-sm">{profile.salary}{'\u20BE'}</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">სამუშაო დღეები:</span>
-                        <span className="text-sm">
-                          {WEEK_DAYS.filter((wd) => (profile.workDays || []).includes(wd.value)).map((wd) => wd.label).join(', ')}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">დღიური ხელფასი:</span>
-                        <Badge variant="success" className="text-sm">{dailySalary}{'\u20BE'}/დღე</Badge>
-                      </div>
-                    </>
-                  )}
-
-                  {needsDailyTarget && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">
-                        {profile.incomeType === 'both' ? 'დღიური დანამატი:' : 'დღიური გეგმა:'}
-                      </span>
-                      <Badge variant="success" className="text-sm">{profile.dailyTarget}{'\u20BE'}/დღე</Badge>
-                    </div>
-                  )}
-
-                  {profile.additionalIncomes.length > 0 && (
-                    <div className="border-t border-border pt-2">
-                      <span className="text-muted-foreground text-sm">დამატებითი:</span>
-                      {profile.additionalIncomes.map((ai) => (
-                        <div key={ai.id} className="flex justify-between text-sm mt-1">
-                          <span>{ai.name}</span>
-                          <span className="text-emerald-600 dark:text-emerald-400">
-                            +{ai.amount}{'\u20BE'}/{ai.frequency === 'monthly' ? 'თვე' : ai.frequency === 'weekly' ? 'კვირა' : 'დღე'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="border-t border-border pt-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">თვიური შემოსავალი:</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{monthlyIncome}{'\u20BE'}</span>
-                    </div>
-                  </div>
-
-                  {Object.keys(uniqueBills).length > 0 && (
-                    <div className="border-t border-border pt-2">
-                      <span className="text-muted-foreground text-sm">ყოველთვიური გადასახადი:</span>
-                      {Object.entries(uniqueBills).map(([name, amount]) => (
-                        <div key={name} className="flex justify-between text-sm mt-1">
-                          <span>{name}</span>
-                          <span className="text-red-600 dark:text-red-400">-{amount}{'\u20BE'}/თვე</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between text-sm mt-1 pt-1 border-t border-border/50">
-                        <span className="text-muted-foreground">სულ:</span>
-                        <Badge variant="danger">-{monthlyBillsTotal}{'\u20BE'}/თვე</Badge>
-                      </div>
-                    </div>
-                  )}
-
-                  {utilityTotal > 0 && (
-                    <div className="border-t border-border pt-2">
-                      <span className="text-muted-foreground text-sm">⚡ კომუნალურები:</span>
-                      {Object.entries(utilityAmounts).map(([key, val]) => {
-                        const amount = parseInt(val) || 0;
-                        if (amount <= 0) return null;
-                        const util = UTILITY_TYPES.find((u) => u.key === key);
-                        return (
-                          <div key={key} className="flex justify-between text-sm mt-1">
-                            <span style={{ color: util?.color }}>{util?.icon} {util?.label}</span>
-                            <span className="text-red-600 dark:text-red-400">-{amount}{'\u20BE'}/თვე</span>
-                          </div>
-                        );
-                      })}
-                      <div className="flex justify-between text-sm mt-1 pt-1 border-t border-border/50">
-                        <span className="text-muted-foreground">სულ კომუნალური:</span>
-                        <Badge variant="danger">-{utilityTotal}{'\u20BE'}/თვე</Badge>
-                      </div>
-                    </div>
-                  )}
-
-                  {bankItems.length > 0 && (
-                    <div className="border-t border-border pt-2">
-                      <span className="text-muted-foreground text-sm flex items-center gap-1">
-                        <Landmark className="w-3.5 h-3.5" /> ბანკი:
-                      </span>
-                      {bankItems.map((item, idx) => {
-                        const typeInfo = BANK_PRODUCT_TYPES.find((t) => t.key === item.type);
-                        return (
-                          <div key={idx} className="flex justify-between text-sm mt-1">
-                            <span style={{ color: typeInfo?.color }}>{typeInfo?.icon} {typeInfo?.label}{item.name ? `: ${item.name}` : ''}</span>
-                            <span className="text-xs">
-                              <span className="text-red-600 dark:text-red-400">{item.principal}₾</span>
-                              <span className="text-muted-foreground mx-1">+</span>
-                              <span className="text-orange-600 dark:text-orange-400">{item.monthlyInterest}₾/თვე</span>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {lombardItems.length > 0 && (
-                    <div className="border-t border-border pt-2">
-                      <span className="text-muted-foreground text-sm flex items-center gap-1">
-                        <Package className="w-3.5 h-3.5" /> ლობარდი:
-                      </span>
-                      {lombardItems.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-sm mt-1">
-                          <span className="text-amber-700 dark:text-amber-300">🏪 {item.itemName}</span>
-                          <span className="text-xs">
-                            <span className="text-red-600 dark:text-red-400">{item.principal}₾</span>
-                            <span className="text-muted-foreground mx-1">+</span>
-                            <span className="text-orange-600 dark:text-orange-400">{item.monthlyInterest}₾/თვე</span>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* მაჩვენებლები */}
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="border-2 border-emerald-500/50 bg-emerald-500/10">
-                  <CardContent className="pt-4 pb-4 text-center">
-                    <p className="text-emerald-600 dark:text-emerald-400 text-xs mb-1">დღიური გეგმა</p>
-                    <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{dailyTarget}{'\u20BE'}</p>
-                    <p className="text-emerald-500 dark:text-emerald-400 text-[10px] mt-1">
-                      {profile.incomeType === 'both'
-                        ? `${dailySalary}₾ ხელფასი + ${profile.dailyTarget}₾ დანამატი`
-                        : 'სამუშაო დღეზე'
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="border-2 border-primary/50 bg-gradient-to-br from-primary/15 to-primary/5">
-                  <CardContent className="pt-4 pb-4 text-center">
-                    <p className="text-primary/80 text-xs mb-1">დღიური ბიუჯეტი</p>
-                    <p className="text-3xl font-black text-primary">{dailyBudget}{'\u20BE'}</p>
-                    <p className="text-primary/50 text-[10px] mt-1">ხარჯვის ლიმიტი</p>
-                  </CardContent>
-                </Card>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button variant="secondary" onClick={() => setStep(5)} className="flex-1">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> უკან
+                <Button variant="secondary" onClick={() => setStep(2)} className="flex-1">
+                  <ArrowLeft className="w-4 h-4 mr-1" /> უკან
                 </Button>
-                <Button onClick={handleFinish} size="lg" className="flex-[2] text-lg">
-                  🏺 დაწყება!
-                  <Check className="w-5 h-5 ml-2" />
+                <Button onClick={handleFinish} size="lg" className="flex-[2] text-lg py-6">
+                  🏺 დაწყება! <Check className="w-5 h-5 ml-2" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* პროგრეს ინდიკატორი */}
+        {/* პროგრესი */}
         {step > 0 && (
           <div className="flex justify-center gap-2 mt-8">
-            {[1, 2, 3, 4, 5, 6].map((s) => (
-              <div
-                key={s}
-                className={cn(
-                  'h-2 rounded-full transition-all duration-300',
-                  s <= step ? 'w-8 bg-primary' : 'w-4 bg-muted'
+            {[1, 2, 3].map((s) => (
+              <div key={s}
+                className={cn('h-2 rounded-full transition-all duration-300',
+                  s <= step ? 'w-10 bg-primary' : 'w-4 bg-muted'
                 )}
               />
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

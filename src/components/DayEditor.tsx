@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { AppState, DayData, Expense, ExpenseCategory, ExpenseSubcategory, SUBCATEGORIES, SUBCATEGORY_LIST, UtilityType, UTILITY_TYPES, EXTRA_INCOME_SOURCES } from '../types';
+import { AppState, DayData, Expense, ExpenseCategory, ExpenseSubcategory, SUBCATEGORIES, SUBCATEGORY_LIST, UtilityType, UTILITY_TYPES, EXTRA_INCOME_SOURCES, CalendarEvent, CalendarEventType, EVENT_TYPES, EVENT_TYPE_LIST } from '../types';
 import { calculateBalance, getExpensesTotal, getDailyTargetForDate, getAverageDailyExpenses, calculateDebtRepaymentPlan, getDailyPlan, DailyPlanEntry } from '../utils/calculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { X, Save, Plus, Trash2, ArrowUp, ArrowDown, CheckSquare, BookOpen, CreditCard, Receipt, Check } from 'lucide-react';
+import { X, Save, Plus, Trash2, ArrowUp, ArrowDown, CheckSquare, BookOpen, CreditCard, Receipt, Check, CalendarDays } from 'lucide-react';
 
 const EMPTY_DAY: DayData = {
   incMain: 0,
@@ -63,12 +63,15 @@ interface DayEditorProps {
 
 export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClose }) => {
   const [formData, setFormData] = useState<DayData>(EMPTY_DAY);
+  const [eventsOpen, setEventsOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (date) {
       const rawData = state.db[date] || EMPTY_DAY;
-      setFormData(migrateDayData(rawData));
+      const migrated = migrateDayData(rawData);
+      setFormData(migrated);
+      setEventsOpen((migrated.events || []).length > 0);
     }
   }, [date, state.db]);
 
@@ -262,6 +265,31 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
     setFormData((prev) => ({
       ...prev,
       expenses: prev.expenses.filter((e) => e.id !== id),
+    }));
+  };
+
+  // === ივენთები ===
+  const addEvent = (type: CalendarEventType = 'სხვა') => {
+    setFormData((prev) => ({
+      ...prev,
+      events: [...(prev.events || []), { id: Date.now(), type }],
+    }));
+    setEventsOpen(true);
+  };
+
+  const updateEvent = (id: number, field: keyof CalendarEvent, value: string | number) => {
+    setFormData((prev) => ({
+      ...prev,
+      events: (prev.events || []).map((e) =>
+        e.id === id ? { ...e, [field]: value } : e
+      ),
+    }));
+  };
+
+  const removeEvent = (id: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      events: (prev.events || []).filter((e) => e.id !== id),
     }));
   };
 
@@ -1133,6 +1161,114 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
               <p className="text-[8px] text-amber-600/70 dark:text-amber-400/70 ml-7 mt-0.5">
                 💡 დამრგვალე {expensesTotal}₾ → {expensesTotal + roundUpAmount}₾ · +{roundUpAmount}₾ = {roundUpAmount * 365}₾/წელი
               </p>
+            )}
+          </div>
+
+          {/* ივენთები */}
+          <div className="rounded-2xl border border-teal-200 dark:border-teal-700 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/10 overflow-hidden">
+            <button
+              onClick={() => setEventsOpen(!eventsOpen)}
+              className="w-full px-2.5 py-1.5 flex items-center gap-1.5 hover:bg-teal-100/50 dark:hover:bg-teal-800/30 transition-colors"
+            >
+              <CalendarDays className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+              <span className="text-[10px] font-black text-teal-700 dark:text-teal-300 uppercase tracking-wider">ივენთები</span>
+              {(formData.events || []).length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-teal-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {(formData.events || []).length}
+                </span>
+              )}
+              <span className="ml-auto text-teal-500 text-xs">{eventsOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {eventsOpen && (
+              <div className="px-2.5 pb-2.5 space-y-2 border-t border-teal-200/50 dark:border-teal-700/50 pt-2">
+                {/* პრესეტები — სწრაფი დამატება */}
+                <div className="flex flex-wrap gap-1">
+                  {EVENT_TYPE_LIST.map((t) => {
+                    const info = EVENT_TYPES[t];
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => addEvent(t)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-white/60 dark:bg-slate-800/60 border border-teal-200/50 dark:border-teal-700/50 hover:bg-teal-100 dark:hover:bg-teal-800/50 transition-colors"
+                        style={{ color: info.color }}
+                      >
+                        <span>{info.icon}</span>
+                        <span>{info.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* არსებული ივენთები */}
+                {(formData.events || []).map((event) => {
+                  const info = EVENT_TYPES[event.type];
+                  const needsPerson = event.type === 'დაბადების დღე' || event.type === 'ქორწილი' || event.type === 'ნათლობა';
+                  return (
+                    <div key={event.id} className="bg-white/70 dark:bg-slate-800/70 rounded-xl p-2 space-y-1.5 border border-teal-200/30 dark:border-teal-700/30">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{info?.icon}</span>
+                        <select
+                          value={event.type}
+                          onChange={(e) => updateEvent(event.id, 'type', e.target.value)}
+                          className="flex-1 text-xs bg-transparent border-none outline-none font-bold text-teal-800 dark:text-teal-200"
+                        >
+                          {EVENT_TYPE_LIST.map((t) => (
+                            <option key={t} value={t}>{EVENT_TYPES[t].icon} {EVENT_TYPES[t].label}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="time"
+                          value={event.time || ''}
+                          onChange={(e) => updateEvent(event.id, 'time', e.target.value)}
+                          className="w-20 text-[11px] bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-700 rounded-lg px-1.5 py-0.5 text-center"
+                        />
+                        <button
+                          onClick={() => removeEvent(event.id)}
+                          className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        {needsPerson && (
+                          <input
+                            type="text"
+                            placeholder="👤 ვისი?"
+                            value={event.personName || ''}
+                            onChange={(e) => updateEvent(event.id, 'personName', e.target.value)}
+                            className="flex-1 text-[11px] bg-teal-50/50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-700/50 rounded-lg px-2 py-1 placeholder:text-teal-400"
+                          />
+                        )}
+                        <input
+                          type="text"
+                          placeholder="📍 სად?"
+                          value={event.location || ''}
+                          onChange={(e) => updateEvent(event.id, 'location', e.target.value)}
+                          className="flex-1 text-[11px] bg-teal-50/50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-700/50 rounded-lg px-2 py-1 placeholder:text-teal-400"
+                        />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="💰 ₾"
+                          value={event.budget || ''}
+                          onChange={(e) => updateEvent(event.id, 'budget', Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-16 text-[11px] bg-teal-50/50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-700/50 rounded-lg px-2 py-1 placeholder:text-teal-400 text-right"
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="📝 შენიშვნა..."
+                        value={event.note || ''}
+                        onChange={(e) => updateEvent(event.id, 'note', e.target.value)}
+                        className="w-full text-[11px] bg-teal-50/50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-700/50 rounded-lg px-2 py-1 placeholder:text-teal-400"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 

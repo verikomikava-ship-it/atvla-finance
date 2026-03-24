@@ -17,6 +17,7 @@ import { StatsView } from '@/components/StatsView';
 import { UtilitiesManager } from '@/components/UtilitiesManager';
 import { ToolsMenu } from '@/components/ToolsMenu';
 import { DiaryView } from '@/components/DiaryView';
+import { EventsView } from '@/components/EventsView';
 import { SetupWizard } from '@/components/SetupWizard';
 import { AuthModal } from '@/components/AuthModal';
 import { cn } from '@/lib/utils';
@@ -621,7 +622,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 text-slate-800 dark:text-slate-200">
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 text-slate-800 dark:text-slate-200">
       {/* Main scrollable area (header + calendar) */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         <Header
@@ -636,6 +637,7 @@ export const App: React.FC = () => {
 
         <main className="px-3 py-2">
           <DiaryView state={state} selectedMonth={selectedMonth} />
+          <EventsView state={state} selectedMonth={selectedMonth} />
           <Calendar state={state} selectedMonth={selectedMonth} onDaySelect={setSelectedDay} />
         </main>
 

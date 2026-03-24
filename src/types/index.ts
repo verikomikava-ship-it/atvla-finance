@@ -100,6 +100,56 @@ export type DailyPlanItem = {
   amount: number;
 };
 
+// კალენდარული ივენთები
+export type CalendarEventType =
+  | 'დაბადების დღე'
+  | 'ბიზნეს შეხვედრა'
+  | 'ბიზნეს ლანჩი'
+  | 'ეკლესია'
+  | 'ექიმთან ვიზიტი'
+  | 'სპორტი'
+  | 'გამოცდა'
+  | 'მოგზაურობა'
+  | 'ქორწილი'
+  | 'კონცერტი'
+  | 'ნათლობა'
+  | 'პაემანი'
+  | 'სხვა';
+
+export type EventTypeInfo = {
+  label: string;
+  icon: string;
+  color: string;
+};
+
+export const EVENT_TYPES: Record<CalendarEventType, EventTypeInfo> = {
+  'დაბადების დღე':    { label: 'დაბადების დღე',    icon: '🎂', color: '#ec4899' },
+  'ბიზნეს შეხვედრა':  { label: 'ბიზნეს შეხვედრა',  icon: '💼', color: '#3b82f6' },
+  'ბიზნეს ლანჩი':     { label: 'ბიზნეს ლანჩი',     icon: '🍽️', color: '#f59e0b' },
+  'ეკლესია':          { label: 'ეკლესია',           icon: '⛪', color: '#8b5cf6' },
+  'ექიმთან ვიზიტი':   { label: 'ექიმთან ვიზიტი',    icon: '🏥', color: '#ef4444' },
+  'სპორტი':           { label: 'სპორტი',            icon: '🏋️', color: '#10b981' },
+  'გამოცდა':          { label: 'გამოცდა',            icon: '📝', color: '#06b6d4' },
+  'მოგზაურობა':       { label: 'მოგზაურობა',         icon: '✈️', color: '#f97316' },
+  'ქორწილი':          { label: 'ქორწილი',            icon: '💒', color: '#d946ef' },
+  'კონცერტი':         { label: 'კონცერტი',           icon: '🎵', color: '#6366f1' },
+  'ნათლობა':          { label: 'ნათლობა',            icon: '✝️', color: '#a855f7' },
+  'პაემანი':           { label: 'პაემანი',            icon: '❤️', color: '#f43f5e' },
+  'სხვა':             { label: 'სხვა',               icon: '📌', color: '#64748b' },
+};
+
+export const EVENT_TYPE_LIST: CalendarEventType[] = Object.keys(EVENT_TYPES) as CalendarEventType[];
+
+export type CalendarEvent = {
+  id: number;
+  type: CalendarEventType;
+  time?: string;        // HH:MM ფორმატი
+  personName?: string;  // ვისი დაბადების დღე / ქორწილი
+  location?: string;    // მისამართი / ადგილი
+  note?: string;        // შენიშვნა
+  budget?: number;      // დაგეგმილი ხარჯი (საჩუქარი, ბილეთი, და ა.შ.)
+};
+
 export type DayData = {
   incMain: number;
   incExtra: number;
@@ -111,6 +161,7 @@ export type DayData = {
   comment: string;
   debtPaid?: boolean; // ვალის დაფარვის პწიჩკა
   dailyPlanDone?: DailyPlanItem[]; // დღიური გეგმა — რა გადადო დღეს
+  events?: CalendarEvent[]; // კალენდარული ივენთები
   // ძველი ფორმატის ველები (backward compatibility)
   rune?: boolean;
   gas?: number;
