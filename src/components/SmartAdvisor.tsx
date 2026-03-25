@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AppState, ExpenseCategory } from '../types';
-import { Card, CardContent } from '@/components/ui/card';
+// Card removed — using plain divs for lighter UI
 import { Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getWorkDaysInMonth, getExpensesTotal } from '../utils/calculations';
@@ -20,7 +20,8 @@ type Insight = {
 };
 
 export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const [showAllInsights, setShowAllInsights] = useState(false);
 
   const analysis = useMemo(() => {
     const now = new Date();
@@ -883,75 +884,96 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
   };
 
   const scoreColor = a.healthScore >= 70 ? '#10b981' : a.healthScore >= 40 ? '#f59e0b' : '#ef4444';
-  const scoreLabel = a.healthScore >= 80 ? 'შესანიშნავი' : a.healthScore >= 60 ? 'კარგი' : a.healthScore >= 40 ? 'საშუალო' : a.healthScore >= 20 ? 'სუსტი' : 'კრიტიკული';
+  // scoreLabel used below if needed
+  const _scoreLabel = a.healthScore >= 80 ? 'შესანიშნავი' : a.healthScore >= 60 ? 'კარგი' : a.healthScore >= 40 ? 'საშუალო' : a.healthScore >= 20 ? 'სუსტი' : 'კრიტიკული'; void _scoreLabel;
+
+  const criticalInsights = a.insights.filter((i) => i.level === 'critical');
+  const warningInsights = a.insights.filter((i) => i.level === 'warning');
+  const otherInsights = a.insights.filter((i) => i.level === 'info' || i.level === 'success');
+  const sortedInsights = [...criticalInsights, ...warningInsights, ...otherInsights];
+  // ჩაკეცილ მდგომარეობაში მაქსიმუმ 2 კრიტიკული ჩანს
+  const collapsedInsights = criticalInsights.slice(0, 2);
 
   return (
-    <div className="space-y-2">
-      {/* ჰედერი — ჯანმრთელობის ქულა + ჯიბეში */}
-      <Card className="border-0 bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-800/50 dark:to-indigo-900/20">
-        <CardContent className="p-2.5">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-between mb-2"
-          >
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">ჭკვიანი მრჩეველი</span>
-              {a.insights.filter((i) => i.level === 'critical').length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              )}
-            </div>
-            {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-          </button>
-
-          {/* ჯანმრთელობის ქულა + ჯიბეში — ყოველთვის ჩანს */}
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {/* ქულა */}
-            <div className="relative">
-              <svg viewBox="0 0 36 36" className="w-14 h-14 mx-auto">
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-200 dark:text-slate-700"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none" stroke={scoreColor} strokeWidth="3"
-                  strokeDasharray={`${a.healthScore}, 100`}
-                  className="transition-all duration-1000"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-black" style={{ color: scoreColor }}>{a.healthScore}</span>
-              </div>
-              <p className="text-[8px] font-bold mt-0.5" style={{ color: scoreColor }}>{scoreLabel}</p>
-            </div>
-
-            {/* ჯიბეში */}
-            <div>
-              <p className="text-[8px] text-muted-foreground mb-0.5">💰 ჯიბეში</p>
-              <p className={cn('text-lg font-black', a.inMyPocket >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                {a.inMyPocket}₾
-              </p>
-              <p className="text-[8px] text-muted-foreground">{a.daysRemaining} დღე დარჩა</p>
-            </div>
-
-            {/* დღიური ლიმიტი */}
-            <div>
-              <p className="text-[8px] text-muted-foreground mb-0.5">📊 დღეს</p>
-              <p className={cn('text-lg font-black', a.dailySafeSpend >= (a.totalMonthlyIncome > 0 ? 20 : 0) ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400')}>
-                {a.dailySafeSpend}₾
-              </p>
-              <p className="text-[8px] text-muted-foreground">უსაფრთხო</p>
+    <div className="space-y-1.5">
+      {/* === კომპაქტური ჰედერი — ყოველთვის ჩანს === */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-800/50 dark:to-indigo-900/20 border border-slate-200/60 dark:border-slate-700/60 p-2.5 transition-all hover:shadow-md"
+      >
+        <div className="flex items-center gap-3">
+          {/* მინი ქულა */}
+          <div className="relative shrink-0">
+            <svg viewBox="0 0 36 36" className="w-11 h-11">
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none" stroke="currentColor" strokeWidth="3.5" className="text-slate-200 dark:text-slate-700" />
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none" stroke={scoreColor} strokeWidth="3.5" strokeDasharray={`${a.healthScore}, 100`} className="transition-all duration-1000" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[11px] font-black" style={{ color: scoreColor }}>{a.healthScore}</span>
             </div>
           </div>
 
-          {/* 50/30/20 მინი ბარი */}
+          {/* ძირითადი რიცხვები */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Zap className="h-3 w-3 text-indigo-500" />
+              <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">მრჩეველი</span>
+              {criticalInsights.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-black animate-pulse">
+                  {criticalInsights.length}
+                </span>
+              )}
+              {warningInsights.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[8px] font-black">
+                  {warningInsights.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-[10px]">
+              <span className={cn('font-black', a.inMyPocket >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                💰 {a.inMyPocket}₾
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className={cn('font-bold', a.dailySafeSpend >= 20 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500')}>
+                📊 {a.dailySafeSpend}₾/დღე
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">{a.daysRemaining} დღე</span>
+            </div>
+          </div>
+
+          {/* გაშლის ისარი */}
+          <div className="shrink-0">
+            {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </div>
+        </div>
+
+        {/* კრიტიკული გაფრთხილებები — ჩაკეცილშიც ჩანს */}
+        {!expanded && collapsedInsights.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {collapsedInsights.map((insight, i) => (
+              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-100 dark:bg-red-900/30 text-[10px]">
+                <span>{insight.icon}</span>
+                <span className="font-bold text-red-600 dark:text-red-400 truncate">{insight.title}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </button>
+
+      {/* === ჩამოშლადი ნაწილი === */}
+      {expanded && (
+        <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+
+          {/* 50/30/20 ბარი */}
           {a.needsPercent + a.wantsPercent > 0 && (
-            <div className="mt-2">
+            <div className="px-2.5">
               <div className="flex h-2 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                <div className="bg-blue-500 transition-all" style={{ width: `${a.needsPercent}%` }} title={`საჭირო: ${a.needsPercent}%`} />
-                <div className="bg-orange-400 transition-all" style={{ width: `${a.wantsPercent}%` }} title={`სურვილი: ${a.wantsPercent}%`} />
-                <div className="bg-emerald-500 transition-all" style={{ width: `${a.savingsPercent}%` }} title={`დანაზოგი: ${a.savingsPercent}%`} />
+                <div className="bg-blue-500 transition-all" style={{ width: `${a.needsPercent}%` }} />
+                <div className="bg-orange-400 transition-all" style={{ width: `${a.wantsPercent}%` }} />
+                <div className="bg-emerald-500 transition-all" style={{ width: `${a.savingsPercent}%` }} />
               </div>
               <div className="flex justify-between text-[8px] mt-0.5 text-muted-foreground">
                 <span>🔵 საჭირო {a.needsPercent}%</span>
@@ -960,263 +982,106 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* ჩამოშლადი ნაწილი */}
-      {expanded && (
-        <>
-          {/* ფინანსური მიმოხილვა */}
+          {/* შემოსავალი vs ვალდებულებები — კომპაქტური */}
           {a.totalMonthlyIncome > 0 && (
-            <Card className="border-0 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800/50 dark:to-blue-900/20">
-              <CardContent className="p-2.5">
-                <div className="mb-1.5">
-                  <div className="flex justify-between text-[10px] mb-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">შემოსავალი: {a.totalMonthlyIncome}₾</span>
-                    <span className="text-red-500 font-bold">ვალდებულებები: {a.totalMonthlyObligations}₾</span>
-                  </div>
-                  <div className="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-500',
-                        a.deficitPercent > 100 ? 'bg-red-500' : a.deficitPercent > 80 ? 'bg-amber-500' : 'bg-emerald-500'
-                      )}
-                      style={{ width: `${Math.min(a.deficitPercent, 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-[8px] text-center text-muted-foreground mt-0.5">
-                    {a.deficitPercent > 100
-                      ? `🔴 ${a.deficitPercent - 100}% დეფიციტი`
-                      : `თავისუფალი: ${100 - a.deficitPercent}% (${a.monthlyBalance}₾)`}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px]">
-                  {a.monthlySalary > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">💼 ხელფასი:</span><span className="font-bold text-emerald-600 dark:text-emerald-400">{a.monthlySalary}₾</span></div>
-                  )}
-                  {a.monthlyDailyIncome > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">📊 ყოველდღიური:</span><span className="font-bold text-emerald-600 dark:text-emerald-400">{a.monthlyDailyIncome}₾</span></div>
-                  )}
-                  {a.billsTotal > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">📅 ბილები:</span><span className="font-bold text-red-500">{a.billsTotal}₾</span></div>
-                  )}
-                  {a.subsTotal > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">🔄 გამოწერები:</span><span className="font-bold text-red-500">{a.subsTotal}₾</span></div>
-                  )}
-                  {a.monthlyDebtPayment > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">💸 ვალები:</span><span className="font-bold text-red-500">{a.monthlyDebtPayment}₾</span></div>
-                  )}
-                  {a.monthlyLivingExpenses > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">🛒 საყოფაცხოვრებო:</span><span className="font-bold text-red-500">{a.monthlyLivingExpenses}₾</span></div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ახალი მეტრიკები — Net Worth, Burn Rate, Streaks, FI */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {/* Net Worth */}
-            <div className="rounded-xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/20 p-2 text-center border border-slate-200 dark:border-slate-700">
-              <p className="text-[7px] text-muted-foreground mb-0.5">💎 წმინდა ღირ.</p>
-              <p className={cn('text-xs font-black', a.netWorth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                {a.netWorth >= 0 ? '' : '-'}{Math.abs(a.netWorth)}₾
-              </p>
-            </div>
-            {/* Burn Rate */}
-            <div className={cn('rounded-xl p-2 text-center border',
-              a.burnRateStatus === 'fast' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
-              : a.burnRateStatus === 'slow' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
-              : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700')}>
-              <p className="text-[7px] text-muted-foreground mb-0.5">
-                {a.burnRateStatus === 'fast' ? '🔥' : a.burnRateStatus === 'slow' ? '🐢' : '⚡'} ტემპი
-              </p>
-              <p className={cn('text-xs font-black',
-                a.burnRateStatus === 'fast' ? 'text-red-600 dark:text-red-400'
-                : a.burnRateStatus === 'slow' ? 'text-emerald-600 dark:text-emerald-400'
-                : 'text-blue-600 dark:text-blue-400')}>
-                {Math.round(a.burnRateRatio * 100)}%
-              </p>
-            </div>
-            {/* Streaks */}
-            <div className="rounded-xl bg-gradient-to-b from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 p-2 text-center border border-amber-200 dark:border-amber-700">
-              <p className="text-[7px] text-muted-foreground mb-0.5">🔥 სტრიქი</p>
-              <p className="text-xs font-black text-amber-600 dark:text-amber-400">{a.currentStreak} დღე</p>
-            </div>
-            {/* FI */}
-            <div className={cn('rounded-xl p-2 text-center border',
-              a.fiMonths >= 1 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
-              : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700')}>
-              <p className="text-[7px] text-muted-foreground mb-0.5">🛡️ ბუფერი</p>
-              <p className={cn('text-xs font-black', a.fiMonths >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400')}>
-                {a.fiLabel}
-              </p>
-            </div>
-          </div>
-
-          {/* Top 3 ხარჯი + Weekend/Weekday */}
-          {a.subcatRanking.length > 0 && (
-            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-rose-50 dark:from-slate-800/40 dark:to-rose-900/10 p-2.5 border border-slate-200 dark:border-slate-700">
-              <p className="text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">🏆 ტოპ 3 ხარჯი (30 დღე)</p>
-              <div className="space-y-1">
-                {a.subcatRanking.map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-slate-400 w-4">{i + 1}.</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between text-[10px]">
-                        <span className="font-bold truncate">{item.name}</span>
-                        <span className="font-black text-rose-600 dark:text-rose-400">{item.total}₾</span>
-                      </div>
-                      <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mt-0.5">
-                        <div
-                          className="h-full rounded-full bg-rose-400 dark:bg-rose-500"
-                          style={{ width: `${a.subcatRanking[0] ? Math.round((item.total / a.subcatRanking[0].total) * 100) : 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-2.5">
+              <div className="flex justify-between text-[10px] mb-1">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">შემოსავალი: {a.totalMonthlyIncome}₾</span>
+                <span className="text-red-500 font-bold">ვალდებულებები: {a.totalMonthlyObligations}₾</span>
               </div>
-              {a.weekendPremium !== 0 && (a.avgWeekday > 0 || a.avgWeekend > 0) && (
-                <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 flex justify-between text-[9px]">
-                  <span className="text-muted-foreground">📊 სამუშაო: {a.avgWeekday}₾/დღე</span>
-                  <span className={cn('font-bold', a.weekendPremium > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400')}>
-                    შაბ-კვ: {a.avgWeekend}₾ ({a.weekendPremium > 0 ? '+' : ''}{a.weekendPremium}%)
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Flexibility Bar — ფიქსირებული vs ცვალებადი */}
-          {a.fixedExpenses + a.variableExpenses > 0 && (
-            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-purple-50 dark:from-slate-800/40 dark:to-purple-900/10 p-2.5 border border-slate-200 dark:border-slate-700">
-              <div className="flex justify-between text-[9px] mb-1">
-                <span className="font-bold text-slate-600 dark:text-slate-400">🔒 ფიქსირებული: {a.fixedExpenses}₾</span>
-                <span className="font-bold text-purple-600 dark:text-purple-400">🔄 ცვალებადი: {a.variableExpenses}₾</span>
-              </div>
-              <div className="flex h-2 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                <div className="bg-slate-500 dark:bg-slate-400" style={{ width: `${100 - a.flexibilityRatio}%` }} />
-                <div className="bg-purple-500 dark:bg-purple-400" style={{ width: `${a.flexibilityRatio}%` }} />
-              </div>
-              <p className="text-[8px] text-center text-muted-foreground mt-0.5">
-                {a.flexibilityRatio < 30 ? '⚠️ მხოლოდ ' : ''}
-                {a.flexibilityRatio}% შეგიძლია შეამცირო
-              </p>
-            </div>
-          )}
-
-          {/* გამოწერების წლიური ღირებულება */}
-          {a.subsAnnualCost > 0 && (
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700">
-              <span className="text-[9px] text-violet-600 dark:text-violet-400 font-bold">🔄 გამოწერები წელიწადში:</span>
-              <span className="text-sm font-black text-violet-700 dark:text-violet-300">{a.subsAnnualCost}₾</span>
-            </div>
-          )}
-
-          {/* თვიური ანგარიში + დამატებითი მეტრიკები */}
-          <div className="grid grid-cols-2 gap-1.5">
-            {/* Report Card */}
-            <div className="rounded-xl bg-gradient-to-b from-indigo-50 to-indigo-100/50 dark:from-indigo-900/20 dark:to-indigo-900/10 p-2.5 border border-indigo-200 dark:border-indigo-700">
-              <p className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 mb-1.5">📊 თვიური ანგარიში</p>
-              <div className="grid grid-cols-2 gap-1">
-                {([
-                  ['ხარჯვა', a.reportCard.spending],
-                  ['დანაზოგი', a.reportCard.savings],
-                  ['ბილები', a.reportCard.bills],
-                  ['ბიუჯეტი', a.reportCard.budget],
-                ] as const).map(([label, grade]) => {
-                  const gradeColor = grade === 'A' ? 'text-emerald-600 dark:text-emerald-400'
-                    : grade === 'B' ? 'text-blue-600 dark:text-blue-400'
-                    : grade === 'C' ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-red-600 dark:text-red-400';
-                  return (
-                    <div key={label} className="flex items-center justify-between">
-                      <span className="text-[8px] text-muted-foreground">{label}:</span>
-                      <span className={cn('text-xs font-black', gradeColor)}>{grade}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* სწრაფი მეტრიკები */}
-            <div className="space-y-1.5">
-              {/* ხელფასამდე */}
-              {a.daysToPayday > 0 && (
-                <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
-                  <span className="text-[8px] text-green-600 dark:text-green-400">💰 ხელფასამდე:</span>
-                  <span className="text-xs font-black text-green-700 dark:text-green-300">{a.daysToPayday} დღე</span>
-                </div>
-              )}
-              {/* No-Spend */}
-              {a.totalMonthDays > 0 && (
-                <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700">
-                  <span className="text-[8px] text-purple-600 dark:text-purple-400">🚫 No-Spend:</span>
-                  <span className="text-xs font-black text-purple-700 dark:text-purple-300">{a.noSpendDays}/{a.totalMonthDays}</span>
-                </div>
-              )}
-              {/* Rollover */}
-              {a.rolloverTotal !== 0 && (
-                <div className={cn('flex items-center justify-between px-2 py-1.5 rounded-xl border',
-                  a.rolloverTotal > 0
-                    ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700'
-                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700')}>
-                  <span className={cn('text-[8px]', a.rolloverTotal > 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-orange-600 dark:text-orange-400')}>
-                    {a.rolloverTotal > 0 ? '📈' : '📉'} ბიუჯეტი:
-                  </span>
-                  <span className={cn('text-xs font-black', a.rolloverTotal > 0 ? 'text-cyan-700 dark:text-cyan-300' : 'text-orange-700 dark:text-orange-300')}>
-                    {a.cappedRollover}₾/დღე
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* თვის პროგნოზი ბარი */}
-          {a.totalMonthlyIncome > 0 && a.predictedMonthExpense > 0 && (
-            <div className="rounded-xl bg-gradient-to-r from-slate-50 to-orange-50 dark:from-slate-800/40 dark:to-orange-900/10 p-2.5 border border-slate-200 dark:border-slate-700">
-              <div className="flex justify-between text-[9px] mb-1">
-                <span className="font-bold text-slate-600 dark:text-slate-400">🔮 თვის პროგნოზი</span>
-                <span className={cn('font-black', a.willOverspend ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400')}>
-                  {Math.round(a.predictedMonthExpense)}₾ / {a.totalMonthlyIncome}₾
-                </span>
-              </div>
-              <div className="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                 <div
-                  className={cn('h-full rounded-full transition-all', a.willOverspend ? 'bg-red-500' : 'bg-emerald-500')}
-                  style={{ width: `${Math.min(100, Math.round((a.predictedMonthExpense / a.totalMonthlyIncome) * 100))}%` }}
+                  className={cn('h-full rounded-full transition-all',
+                    a.deficitPercent > 100 ? 'bg-red-500' : a.deficitPercent > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                  )}
+                  style={{ width: `${Math.min(a.deficitPercent, 100)}%` }}
                 />
               </div>
               <p className="text-[8px] text-center text-muted-foreground mt-0.5">
-                {a.willOverspend
-                  ? `⚠️ ~${Math.round(a.predictedMonthExpense - a.totalMonthlyIncome)}₾ დეფიციტი მოსალოდნელია`
-                  : `✓ ~${Math.round(a.totalMonthlyIncome - a.predictedMonthExpense)}₾ დარჩება`}
+                {a.deficitPercent > 100
+                  ? `🔴 ${a.deficitPercent - 100}% დეფიციტი`
+                  : `თავისუფალი: ${100 - a.deficitPercent}% (${a.monthlyBalance}₾)`}
               </p>
             </div>
           )}
 
+          {/* 4 მინი მეტრიკა */}
+          <div className="grid grid-cols-4 gap-1">
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-1.5 text-center">
+              <p className="text-[7px] text-muted-foreground">💎 წმინდა</p>
+              <p className={cn('text-[11px] font-black', a.netWorth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500')}>
+                {a.netWorth >= 0 ? '' : '-'}{Math.abs(a.netWorth)}₾
+              </p>
+            </div>
+            <div className={cn('rounded-lg border p-1.5 text-center',
+              a.burnRateStatus === 'fast' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+              : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700')}>
+              <p className="text-[7px] text-muted-foreground">{a.burnRateStatus === 'fast' ? '🔥' : '⚡'} ტემპი</p>
+              <p className={cn('text-[11px] font-black',
+                a.burnRateStatus === 'fast' ? 'text-red-500' : a.burnRateStatus === 'slow' ? 'text-emerald-500' : 'text-blue-500')}>
+                {Math.round(a.burnRateRatio * 100)}%
+              </p>
+            </div>
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-1.5 text-center">
+              <p className="text-[7px] text-muted-foreground">🔥 სტრიქი</p>
+              <p className="text-[11px] font-black text-amber-600 dark:text-amber-400">{a.currentStreak}დ</p>
+            </div>
+            <div className={cn('rounded-lg border p-1.5 text-center',
+              a.fiMonths >= 1 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
+              : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700')}>
+              <p className="text-[7px] text-muted-foreground">🛡️ ბუფერი</p>
+              <p className={cn('text-[11px] font-black', a.fiMonths >= 1 ? 'text-emerald-500' : 'text-orange-500')}>{a.fiLabel}</p>
+            </div>
+          </div>
+
+          {/* Report Card — ინლაინ */}
+          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700">
+            <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">📊 ანგარიში</span>
+            <div className="flex items-center gap-2">
+              {([
+                ['ხარჯვა', a.reportCard.spending],
+                ['დანაზოგი', a.reportCard.savings],
+                ['ბილები', a.reportCard.bills],
+                ['ბიუჯეტი', a.reportCard.budget],
+              ] as const).map(([label, grade]) => {
+                const gc = grade === 'A' ? 'text-emerald-600' : grade === 'B' ? 'text-blue-600' : grade === 'C' ? 'text-amber-600' : 'text-red-600';
+                return (
+                  <span key={label} className="text-[9px]">
+                    <span className="text-muted-foreground">{label}:</span>
+                    <span className={cn('font-black ml-0.5', gc)}>{grade}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
           {/* ინსაითები */}
-          {a.insights
-            .sort((x, y) => {
-              const order: Record<AlertLevel, number> = { critical: 0, warning: 1, info: 2, success: 3 };
-              return order[x.level] - order[y.level];
-            })
-            .map((insight, i) => {
-              const style = levelStyles[insight.level];
-              return (
-                <div
-                  key={i}
-                  className={cn('flex items-start gap-2 px-2.5 py-2 rounded-xl border', style.bg, style.border)}
-                >
-                  <span className="text-sm shrink-0 mt-0.5">{insight.icon}</span>
-                  <div className="min-w-0">
-                    <p className={cn('text-[11px] font-black', style.iconColor)}>{insight.title}</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">{insight.message}</p>
+          {sortedInsights.length > 0 && (
+            <div className="space-y-1">
+              {(showAllInsights ? sortedInsights : sortedInsights.slice(0, 4)).map((insight, i) => {
+                const style = levelStyles[insight.level];
+                return (
+                  <div key={i} className={cn('flex items-start gap-2 px-2.5 py-1.5 rounded-xl border', style.bg, style.border)}>
+                    <span className="text-sm shrink-0">{insight.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('text-[10px] font-black', style.iconColor)}>{insight.title}</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">{insight.message}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-        </>
+                );
+              })}
+              {sortedInsights.length > 4 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAllInsights(!showAllInsights); }}
+                  className="w-full py-1 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  {showAllInsights ? 'ნაკლები ▲' : `კიდევ ${sortedInsights.length - 4} ინსაითი ▼`}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
