@@ -305,14 +305,22 @@ export const getDailyPlan = (state: AppState, dateStr: string): DailyPlanEntry[]
     return saved;
   };
 
-  // 1. ყოველთვიური გადასახადები (bills) — უახლოესი + ვადაგასული
+  // 1. ყოველთვიური გადასახადები (bills) — მიმდინარე/მომავალი თვის
+  const currentMonth = today.getMonth(); // 0-11
   const billsByName: Record<string, typeof state.bills[0]> = {};
   for (const bill of state.bills) {
     if (bill.paid) continue;
     if (!bill.dueDate) continue;
 
+    const due = new Date(bill.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const billMonth = due.getMonth();
+
+    // წარსული თვეების ბილები გამოვტოვოთ (ისინი უკვე "გადახდილია" რეალურად)
+    // მხოლოდ მიმდინარე თვე და მომავალი თვეები გამოჩნდეს
+    if (billMonth !== currentMonth && due.getTime() < today.getTime()) continue;
+
     const existing = billsByName[bill.name];
-    // ვადაგასულებს პრიორიტეტი აქვს, სხვა შემთხვევაში უახლოესი
     if (!existing || bill.dueDate < existing.dueDate!) {
       billsByName[bill.name] = bill;
     }
@@ -322,7 +330,9 @@ export const getDailyPlan = (state: AppState, dateStr: string): DailyPlanEntry[]
     const due = new Date(bill.dueDate!);
     due.setHours(0, 0, 0, 0);
     const daysLeft = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    const isOverdue = daysLeft <= 0;
+    const billMonth = due.getMonth();
+    // ვადაგასულია მხოლოდ თუ ამ თვის ბილია და თარიღი გავიდა
+    const isOverdue = billMonth === currentMonth && daysLeft <= 0;
 
     const saved = getSaved(bill.id, 'bill');
     const remaining = Math.max(0, bill.amount - saved);
@@ -335,8 +345,8 @@ export const getDailyPlan = (state: AppState, dateStr: string): DailyPlanEntry[]
       totalAmount: bill.amount,
       alreadySaved: saved,
       remaining,
-      daysLeft: isOverdue ? 0 : daysLeft,
-      dailyAmount: isOverdue ? remaining : Math.ceil(remaining / daysLeft),
+      daysLeft: isOverdue ? 0 : Math.max(1, daysLeft),
+      dailyAmount: isOverdue ? remaining : Math.ceil(remaining / Math.max(1, daysLeft)),
       dueDate: bill.dueDate!,
       icon: isOverdue ? '🚨' : '📅',
       overdue: isOverdue,
