@@ -307,10 +307,26 @@ export const getDailyPlan = (state: AppState, dateStr: string): DailyPlanEntry[]
 
   // 1. ყოველთვიური გადასახადები (bills) — მიმდინარე/მომავალი თვის
   const currentMonth = today.getMonth(); // 0-11
+
+  // ბანკის სესხებთან დაკავშირებული ბილების ID-ები (ობოლის ფილტრისთვის)
+  const activeLoanBillIds = new Set<number>();
+  for (const loan of state.bankLoans || []) {
+    if (loan.active) {
+      for (const bid of loan.billIds) activeLoanBillIds.add(bid);
+    }
+  }
+  // ობოლი ბილების ID-ები — სესხის ბილია მაგრამ სესხი აღარ არსებობს
+  const allLoanBillIds = new Set<number>();
+  for (const loan of state.bankLoans || []) {
+    for (const bid of loan.billIds) allLoanBillIds.add(bid);
+  }
+
   const billsByName: Record<string, typeof state.bills[0]> = {};
   for (const bill of state.bills) {
     if (bill.paid) continue;
     if (!bill.dueDate) continue;
+    // ობოლი ბილი — სესხის ფორმატით (🏦) მაგრამ აქტიურ სესხს არ ეკუთვნის
+    if (bill.name.startsWith('🏦') && !activeLoanBillIds.has(bill.id)) continue;
 
     const due = new Date(bill.dueDate);
     due.setHours(0, 0, 0, 0);

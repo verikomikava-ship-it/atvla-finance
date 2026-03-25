@@ -169,9 +169,14 @@ export const App: React.FC = () => {
 
   const handleRemoveDebt = useCallback(
     (id: number) => {
+      // ბანკის სესხთან დაკავშირებული ბილები + სესხიც წავშალოთ
+      const linkedLoan = (state.bankLoans || []).find((l) => l.debtId === id);
+      const billIdsToRemove = linkedLoan ? new Set(linkedLoan.billIds) : new Set<number>();
       const newState: AppState = {
         ...state,
         debts: state.debts.filter((d) => d.id !== id),
+        bills: billIdsToRemove.size > 0 ? state.bills.filter((b) => !billIdsToRemove.has(b.id)) : state.bills,
+        bankLoans: linkedLoan ? (state.bankLoans || []).filter((l) => l.id !== linkedLoan.id) : (state.bankLoans || []),
       };
       updateState(newState);
     },
