@@ -617,7 +617,7 @@ export const App: React.FC = () => {
   const handleCleanOrphans = useCallback((): number => {
     let removed = 0;
 
-    // აქტიური ბანკის სესხის ბილების ID-ები
+    // აქტიური ბანკის სესხების ID-ები
     const activeLoanBillIds = new Set<number>();
     const activeLoanDebtIds = new Set<number>();
     for (const loan of state.bankLoans || []) {
@@ -627,39 +627,97 @@ export const App: React.FC = () => {
       }
     }
 
-    // ობოლი ბილები: ბანკის სესხის ბილი რომლის სესხი აღარ აქტიურია
-    const cleanBills = state.bills.filter(b => {
-      const isBankBill = b.name.startsWith('🏦');
-      if (isBankBill && !activeLoanBillIds.has(b.id)) {
-        removed++;
-        return false;
-      }
-      return true;
+    // ობოლი ბილები: ბანკის ბილი რომლის სესხი აღარ აქტიურია
+    const orphanBankBills = state.bills.filter(b => {
+      return b.name.startsWith('🏦') && !activeLoanBillIds.has(b.id);
     });
 
-    // ობოლი ვალები: 🏦 ვალი რომლის ბანკის სესხი აღარ არსებობს
-    const cleanDebts = state.debts.filter(d => {
-      const isBankDebt = d.name.startsWith('🏦');
-      if (isBankDebt && !activeLoanDebtIds.has(d.id)) {
-        removed++;
-        return false;
-      }
-      return true;
+    // ობოლი ვალები: ბანკის ვალი რომლის სესხი აღარ არსებობს
+    const orphanBankDebts = state.debts.filter(d => {
+      return d.name.startsWith('🏦') && !activeLoanDebtIds.has(d.id);
     });
 
-    // ობოლი ბანკის სესხები: რომლის ვალი აღარ არსებობს
-    const activeDebtIds = new Set(cleanDebts.map(d => d.id));
-    const cleanLoans = (state.bankLoans || []).filter(l => {
-      if (!activeDebtIds.has(l.debtId)) {
-        removed++;
-        return false;
-      }
-      return true;
-    });
+    // ობოლი ბანკის სესხები
+    const activeDebtIds = new Set(state.debts.map(d => d.id));
+    const orphanLoans = (state.bankLoans || []).filter(l => !activeDebtIds.has(l.debtId));
 
-    // ნაპოვნი ობოლები — აჩვენე რა წაიშალა
+    // ავტომატურად წასაშლელი ID-ები
+    const autoRemoveBillIds = new Set(orphanBankBills.map(b => b.id));
+    const autoRemoveDebtIds = new Set(orphanBankDebts.map(d => d.id));
+    removed = autoRemoveBillIds.size + autoRemoveDebtIds.size + orphanLoans.length;
+
+    // ხელით საშლელი — ყველა დარჩენილი ვალი და ბილი
+    const manualDebtIds = new Set<number>();
+    const manualBillIds = new Set<number>();
+
+    const remainingDebts = state.debts.filter(d => !autoRemoveDebtIds.has(d.id) && !d.paid);
+    const remainingBills = state.bills.filter(b => !autoRemoveBillIds.has(b.id) && !b.paid);
+
+    // ყველა ვალი/ბილი სიაში ჩვენება
+    const items: string[] = [];
+    if (remainingDebts.length > 0) {
+      items.push('📌 ვალები:');
+      remainingDebts.forEach(d => items.push(`  • ${d.name} (${d.amount - (d.paidAmount || 0)}₾)`));
+    }
+    if (remainingBills.length > 0) {
+      items.push('📋 გადასახადები:');
+      // ბილები სახელით გაერთიანებული (12 ინსტანციიდან 1 აჩვენე)
+      const billNames = new Set<string>();
+      remainingBills.forEach(b => billNames.add(b.name));
+      billNames.forEach(name => {
+        const first = remainingBills.find(b => b.name === name)!;
+        items.push(`  • ${name} (${first.amount}₾)`);
+      });
+    }
+
+    if (items.length > 0) {
+      const autoMsg = removed > 0
+        ? `✅ ავტომატურად ${removed} ობოლი წაიშალა.\n\n`
+        : '';
+      const wantManual = window.confirm(
+        `${autoMsg}აქტიური ჩანაწერები:\n${items.join('\n')}\n\nგინდა რომელიმეს წაშლა?`
+      );
+      if (wantManual) {
+        // თითო ვალზე ჰკითხე
+        for (const debt of remainingDebts) {
+          if (window.confirm(`წავშალო ვალი "${debt.name}" (${debt.amount - (debt.paidAmount || 0)}₾)?`)) {
+            manualDebtIds.add(debt.id);
+            removed++;
+          }
+        }
+        // თითო ბილზე ჰკითხე (სახელით გაერთიანებული)
+        const askedBillNames = new Set<string>();
+        for (const bill of remainingBills) {
+          if (askedBillNames.has(bill.name)) continue;
+          askedBillNames.add(bill.name);
+          if (window.confirm(`წავშალო გადასახადი "${bill.name}" (${bill.amount}₾)?`)) {
+            // ამ სახელის ყველა ბილი წავშალოთ
+            remainingBills.filter(b => b.name === bill.name).forEach(b => manualBillIds.add(b.id));
+            removed++;
+          }
+        }
+      }
+    }
+
     if (removed > 0) {
-      updateState({ ...state, debts: cleanDebts, bills: cleanBills, bankLoans: cleanLoans });
+      // ვალთან დაკავშირებული ბილებიც
+      const linkedBillIds = new Set<number>();
+      for (const loan of state.bankLoans || []) {
+        if (manualDebtIds.has(loan.debtId) || autoRemoveDebtIds.has(loan.debtId)) {
+          for (const bid of loan.billIds) linkedBillIds.add(bid);
+        }
+      }
+
+      updateState({
+        ...state,
+        debts: state.debts.filter(d => !autoRemoveDebtIds.has(d.id) && !manualDebtIds.has(d.id)),
+        bills: state.bills.filter(b =>
+          !autoRemoveBillIds.has(b.id) && !manualBillIds.has(b.id) && !linkedBillIds.has(b.id)
+        ),
+        bankLoans: (state.bankLoans || []).filter(l =>
+          activeDebtIds.has(l.debtId) && !manualDebtIds.has(l.debtId)
+        ),
+      });
     }
     return removed;
   }, [state, updateState]);
