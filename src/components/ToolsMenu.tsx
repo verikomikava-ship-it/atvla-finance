@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { exportData, importData } from '../utils/storage';
 import { AppState } from '../types';
-import { Settings, Save, FolderOpen, Trash2, RotateCcw } from 'lucide-react';
+import { Settings, Save, FolderOpen, Trash2, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ToolsMenuProps {
@@ -9,9 +9,10 @@ interface ToolsMenuProps {
   onImport: (state: AppState) => void;
   onReset: () => void;
   onRerunSetup: () => void;
+  onCleanOrphans?: () => number; // returns count of removed items
 }
 
-export const ToolsMenu: React.FC<ToolsMenuProps> = ({ state, onImport, onReset, onRerunSetup }) => {
+export const ToolsMenu: React.FC<ToolsMenuProps> = ({ state, onImport, onReset, onRerunSetup, onCleanOrphans }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [pos, setPos] = useState(() => {
     try {
@@ -155,6 +156,25 @@ export const ToolsMenu: React.FC<ToolsMenuProps> = ({ state, onImport, onReset, 
             <FolderOpen className="h-4 w-4 mr-2" />
             აღდგენა
           </Button>
+
+          {onCleanOrphans && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const count = onCleanOrphans();
+                setIsOpen(false);
+                if (count > 0) {
+                  alert(`${count} ობოლი ჩანაწერი წაიშალა!`);
+                } else {
+                  alert('ობოლი ჩანაწერები არ მოიძებნა — ყველაფერი სუფთაა!');
+                }
+              }}
+              className="whitespace-nowrap text-sm"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              გაწმენდა
+            </Button>
+          )}
 
           <Button
             variant="outline"

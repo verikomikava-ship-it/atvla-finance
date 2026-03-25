@@ -613,6 +613,42 @@ export const App: React.FC = () => {
     setSelectedDay(null);
   }, [updateState]);
 
+  // ობოლი მონაცემების გაწმენდა
+  const handleCleanOrphans = useCallback((): number => {
+    let removed = 0;
+    const activeLoanBillIds = new Set<number>();
+    for (const loan of state.bankLoans || []) {
+      if (loan.active) {
+        for (const bid of loan.billIds) activeLoanBillIds.add(bid);
+      }
+    }
+    const activeDebtIds = new Set(state.debts.map(d => d.id));
+
+    // ობოლი ბილები: ბანკის სესხის ბილი რომლის სესხი აღარ აქტიურია
+    const cleanBills = state.bills.filter(b => {
+      const isBankBill = b.name.startsWith('🏦');
+      if (isBankBill && !activeLoanBillIds.has(b.id)) {
+        removed++;
+        return false;
+      }
+      return true;
+    });
+
+    // ობოლი ბანკის სესხები: რომლის ვალი აღარ არსებობს
+    const cleanLoans = (state.bankLoans || []).filter(l => {
+      if (!activeDebtIds.has(l.debtId)) {
+        removed++;
+        return false;
+      }
+      return true;
+    });
+
+    if (removed > 0) {
+      updateState({ ...state, bills: cleanBills, bankLoans: cleanLoans });
+    }
+    return removed;
+  }, [state, updateState]);
+
   // თუ setup არ არის გავლილი, wizard აჩვენე
   if (!state.profile?.setupCompleted) {
     return (
@@ -875,7 +911,7 @@ export const App: React.FC = () => {
         </div>
       </aside>
 
-      <ToolsMenu state={state} onImport={handleImportData} onReset={handleResetData} onRerunSetup={handleRerunSetup} />
+      <ToolsMenu state={state} onImport={handleImportData} onReset={handleResetData} onRerunSetup={handleRerunSetup} onCleanOrphans={handleCleanOrphans} />
 
       {/* Theme toggle */}
       <button
