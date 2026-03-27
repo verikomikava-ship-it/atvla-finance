@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { AppState, DayData, Debt, DebtPriority, UserProfile, Bill, Subscription, Loan, Lombard, BankLoan, BankProductType } from '@/types';
+import { AppState, DayData, Debt, DebtPriority, UserProfile, Bill, Subscription, Loan, Lombard, BankLoan, BankProductType, Project } from '@/types';
 import { useAppState } from '@/hooks/useAppState';
 import { useAuth } from '@/hooks/useAuth';
 import { useFirestoreSync } from '@/hooks/useFirestoreSync';
@@ -13,6 +13,7 @@ import { BillsManager } from '@/components/BillsManager';
 import { SubscriptionsManager } from '@/components/SubscriptionsManager';
 import { LoansManager } from '@/components/LoansManager';
 import { BankLoansManager } from '@/components/BankLoansManager';
+import { ProjectsManager } from '@/components/ProjectsManager';
 import { StatsView } from '@/components/StatsView';
 import { UtilitiesManager } from '@/components/UtilitiesManager';
 import { ToolsMenu } from '@/components/ToolsMenu';
@@ -41,7 +42,7 @@ export const App: React.FC = () => {
   } = useAuth();
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth().toString());
-  const [activeTab, setActiveTab] = useState<'debts' | 'payments' | 'loans' | 'stats'>('payments');
+  const [activeTab, setActiveTab] = useState<'debts' | 'payments' | 'loans' | 'projects' | 'stats'>('payments');
   const [paymentSubTab, setPaymentSubTab] = useState<'bills' | 'utilities' | 'subscriptions'>('bills');
   const [debtSubTab, setDebtSubTab] = useState<'personal' | 'bank'>('personal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -596,6 +597,7 @@ export const App: React.FC = () => {
       loans: [],
       lombards: [],
       bankLoans: [],
+      projects: [],
       goal: 0,
       goalName: '',
       profile: {
@@ -612,6 +614,86 @@ export const App: React.FC = () => {
     updateState(emptyState);
     setSelectedDay(null);
   }, [updateState]);
+
+  // ===== პროექტები =====
+  const handleAddProject = useCallback((name: string, description?: string) => {
+    const newProject: Project = {
+      id: Date.now(),
+      name,
+      description,
+      inventoryItems: [],
+      monthlyCosts: [],
+      active: true,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    updateState({ ...state, projects: [...(state.projects || []), newProject] });
+  }, [state, updateState]);
+
+  const handleRemoveProject = useCallback((id: number) => {
+    updateState({ ...state, projects: (state.projects || []).filter(p => p.id !== id) });
+  }, [state, updateState]);
+
+  const handleEditProject = useCallback((id: number, updates: Partial<Project>) => {
+    updateState({
+      ...state,
+      projects: (state.projects || []).map(p => p.id === id ? { ...p, ...updates } : p),
+    });
+  }, [state, updateState]);
+
+  const handleAddInventoryItem = useCallback((projectId: number, name: string, cost: number) => {
+    updateState({
+      ...state,
+      projects: (state.projects || []).map(p =>
+        p.id === projectId
+          ? { ...p, inventoryItems: [...p.inventoryItems, { id: Date.now(), name, cost, purchased: false }] }
+          : p
+      ),
+    });
+  }, [state, updateState]);
+
+  const handleRemoveInventoryItem = useCallback((projectId: number, itemId: number) => {
+    updateState({
+      ...state,
+      projects: (state.projects || []).map(p =>
+        p.id === projectId
+          ? { ...p, inventoryItems: p.inventoryItems.filter(i => i.id !== itemId) }
+          : p
+      ),
+    });
+  }, [state, updateState]);
+
+  const handleToggleInventoryPurchased = useCallback((projectId: number, itemId: number) => {
+    updateState({
+      ...state,
+      projects: (state.projects || []).map(p =>
+        p.id === projectId
+          ? { ...p, inventoryItems: p.inventoryItems.map(i => i.id === itemId ? { ...i, purchased: !i.purchased } : i) }
+          : p
+      ),
+    });
+  }, [state, updateState]);
+
+  const handleAddMonthlyCost = useCallback((projectId: number, name: string, amount: number) => {
+    updateState({
+      ...state,
+      projects: (state.projects || []).map(p =>
+        p.id === projectId
+          ? { ...p, monthlyCosts: [...p.monthlyCosts, { id: Date.now(), name, amount }] }
+          : p
+      ),
+    });
+  }, [state, updateState]);
+
+  const handleRemoveMonthlyCost = useCallback((projectId: number, costId: number) => {
+    updateState({
+      ...state,
+      projects: (state.projects || []).map(p =>
+        p.id === projectId
+          ? { ...p, monthlyCosts: p.monthlyCosts.filter(c => c.id !== costId) }
+          : p
+      ),
+    });
+  }, [state, updateState]);
 
   // ობოლი მონაცემების გაწმენდა
   const handleCleanOrphans = useCallback((): number => {
@@ -750,6 +832,7 @@ export const App: React.FC = () => {
   const tabs = [
     { key: 'payments' as const, label: 'გადასახადები', icon: '📅' },
     { key: 'debts' as const, label: 'ვალები / სესხები', icon: '💸' },
+    { key: 'projects' as const, label: 'პროექტები', icon: '🏗️' },
     { key: 'loans' as const, label: 'გასესხებული', icon: '🤝' },
     { key: 'stats' as const, label: 'სტატისტიკა', icon: '📊' },
   ];
@@ -959,6 +1042,21 @@ export const App: React.FC = () => {
                 />
               )}
             </>
+          )}
+
+          {/* ===== პროექტები ===== */}
+          {activeTab === 'projects' && (
+            <ProjectsManager
+              state={state}
+              onAddProject={handleAddProject}
+              onRemoveProject={handleRemoveProject}
+              onEditProject={handleEditProject}
+              onAddInventoryItem={handleAddInventoryItem}
+              onRemoveInventoryItem={handleRemoveInventoryItem}
+              onToggleInventoryPurchased={handleToggleInventoryPurchased}
+              onAddMonthlyCost={handleAddMonthlyCost}
+              onRemoveMonthlyCost={handleRemoveMonthlyCost}
+            />
           )}
 
           {/* ===== გასესხებული ===== */}

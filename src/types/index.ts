@@ -260,6 +260,30 @@ export type Lombard = {
   createdAt: string;          // YYYY-MM-DD
 };
 
+// პროექტები (ბიზნეს გეგმა / ინვესტიცია)
+export type ProjectItem = {
+  id: number;
+  name: string;               // მაგ: "მაცივარი", "საცხობი ქურა"
+  cost: number;               // ერთჯერადი ღირებულება
+  purchased: boolean;         // ნაყიდია თუ არა
+};
+
+export type ProjectMonthlyCost = {
+  id: number;
+  name: string;               // მაგ: "ქირა", "სტაფი", "კომუნალური"
+  amount: number;             // ყოველთვიური თანხა
+};
+
+export type Project = {
+  id: number;
+  name: string;               // მაგ: "საცხობი"
+  description?: string;       // აღწერა (სურვილისამებრ)
+  inventoryItems: ProjectItem[];
+  monthlyCosts: ProjectMonthlyCost[];
+  active: boolean;
+  createdAt: string;          // YYYY-MM-DD
+};
+
 export type IncomeType = 'salary' | 'freelance' | 'both';
 export type PayFrequency = 'monthly_1' | 'monthly_2' | 'biweekly' | 'weekly';
 
@@ -294,6 +318,7 @@ export type AppState = {
   loans: Loan[];
   lombards: Lombard[];
   bankLoans: BankLoan[];
+  projects: Project[];
   goal: number;
   goalName: string;
   profile: UserProfile;
