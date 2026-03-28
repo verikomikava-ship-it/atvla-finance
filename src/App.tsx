@@ -93,7 +93,7 @@ export const App: React.FC = () => {
   }, [state.profile]);
 
   const handleSetupComplete = useCallback(
-    (profile: UserProfile, bills: Bill[], setupDebts?: Debt[], setupLombards?: Lombard[], setupBankLoans?: BankLoan[]) => {
+    (profile: UserProfile, bills: Bill[], setupDebts?: Debt[], setupLombards?: Lombard[], setupBankLoans?: BankLoan[], walletBalance?: number) => {
       const newState: AppState = {
         ...state,
         profile,
@@ -101,8 +101,16 @@ export const App: React.FC = () => {
         debts: [...state.debts, ...(setupDebts || [])],
         lombards: [...(state.lombards || []), ...(setupLombards || [])],
         bankLoans: [...(state.bankLoans || []), ...(setupBankLoans || [])],
+        walletBalance: walletBalance !== undefined ? walletBalance : state.walletBalance,
       };
       updateState(newState);
+    },
+    [state, updateState]
+  );
+
+  const handleWalletUpdate = useCallback(
+    (amount: number) => {
+      updateState({ ...state, walletBalance: amount });
     },
     [state, updateState]
   );
@@ -884,6 +892,7 @@ export const App: React.FC = () => {
           onGoalChange={handleGoalChange}
           onProfileChange={handleProfileChange}
           onMonthChange={setSelectedMonth}
+          onWalletUpdate={handleWalletUpdate}
         />
 
         <main className="px-3 py-2 space-y-2">

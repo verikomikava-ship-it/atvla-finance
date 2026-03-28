@@ -18,7 +18,7 @@ const BILL_PRESETS = [
 ] as const;
 
 interface SetupWizardProps {
-  onComplete: (profile: UserProfile, bills: Bill[], debts?: Debt[], lombards?: Lombard[], bankLoans?: BankLoan[]) => void;
+  onComplete: (profile: UserProfile, bills: Bill[], debts?: Debt[], lombards?: Lombard[], bankLoans?: BankLoan[], walletBalance?: number) => void;
   user: User | null;
   authLoading: boolean;
   onSignInWithGoogle: () => Promise<void>;
@@ -75,6 +75,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   // Step 1 inputs
   const [salaryInput, setSalaryInput] = useState('');
   const [dailyTargetInput, setDailyTargetInput] = useState('');
+
+  // Step 3 — ჯიბეში ფული
+  const [walletInput, setWalletInput] = useState('');
 
   // Step 2 — bills
   const [bills, setBills] = useState<Bill[]>([]);
@@ -374,7 +377,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
       });
     });
 
-    onComplete(finalProfile, [...bills, ...utilityBills, ...lombardBills], setupDebts, setupLombards, setupBankLoans);
+    const walletBalance = walletInput.trim() ? parseFloat(walletInput) || 0 : undefined;
+    onComplete(finalProfile, [...bills, ...utilityBills, ...lombardBills], setupDebts, setupLombards, setupBankLoans, walletBalance);
   };
 
   const handleSkipSetup = () => {
@@ -968,6 +972,31 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                     </span>
                   </div>
                 )}
+              </div>
+
+              {/* ჯიბეში ფული — ახლა რამდენი გაქვს? */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">👛</span>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">ახლა რამდენი გაქვს ჯიბეში?</p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400">ახლა ხელთ რამდენი ნაღდი ფული გაქვს (ან ბარათზე)</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={walletInput}
+                    onChange={e => setWalletInput(e.target.value)}
+                    placeholder="0"
+                    className={cn(inputClass, 'flex-1 text-lg font-bold text-emerald-700 dark:text-emerald-300')}
+                  />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold text-lg">₾</span>
+                </div>
+                <p className="text-[10px] text-emerald-500 dark:text-emerald-500 mt-1.5">
+                  * სავალდებულო არ არის — მოგვიანებით შეგიძლია შეიყვანო
+                </p>
               </div>
 
               {/* სამოტივაციო წერილი */}

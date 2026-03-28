@@ -325,6 +325,7 @@ export type AppState = {
   goal: number;
   goalName: string;
   goalProjectId?: number;
+  walletBalance?: number;
   profile: UserProfile;
 };
 

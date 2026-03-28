@@ -16,6 +16,7 @@ interface HeaderProps {
   onGoalChange: (goal: number, goalName: string) => void;
   onProfileChange: (profile: UserProfile) => void;
   onMonthChange: (month: string) => void;
+  onWalletUpdate: (amount: number) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,8 +28,29 @@ export const Header: React.FC<HeaderProps> = ({
   onGoalChange,
   onProfileChange,
   onMonthChange,
+  onWalletUpdate,
 }) => {
   const netBalance = totalInc - totalExp;
+
+  // Wallet editor
+  const [isEditingWallet, setIsEditingWallet] = useState(false);
+  const [walletInput, setWalletInput] = useState('');
+  const walletInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingWallet && walletInputRef.current) walletInputRef.current.focus();
+  }, [isEditingWallet]);
+
+  const openWalletEditor = () => {
+    setWalletInput(state.walletBalance !== undefined ? state.walletBalance.toString() : '');
+    setIsEditingWallet(true);
+  };
+
+  const saveWallet = () => {
+    const amount = parseFloat(walletInput) || 0;
+    onWalletUpdate(Math.max(0, amount));
+    setIsEditingWallet(false);
+  };
 
   // Goal editor
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -280,6 +302,61 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       )}
+
+      {/* 👛 ჯიბეში ფული widget */}
+      <div className="px-4 pb-2">
+        {isEditingWallet ? (
+          <div className="flex items-center gap-2 bg-white/20 backdrop-blur rounded-xl px-3 py-2 border border-white/30">
+            <Wallet className="w-4 h-4 text-white/80 shrink-0" />
+            <span className="text-[11px] text-white/80 shrink-0">👛 ჯიბეში:</span>
+            <Input
+              ref={walletInputRef}
+              type="number"
+              inputMode="decimal"
+              value={walletInput}
+              onChange={e => setWalletInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveWallet(); if (e.key === 'Escape') setIsEditingWallet(false); }}
+              placeholder="0"
+              className="flex-1 h-7 text-sm bg-white/90 text-slate-800 border-0 font-bold"
+            />
+            <span className="text-white/80 text-sm">₾</span>
+            <Button size="sm" onClick={saveWallet} className="h-7 w-7 p-0 bg-white text-emerald-600 hover:bg-white/90 shrink-0">
+              <Check className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setIsEditingWallet(false)} className="h-7 w-7 p-0 text-white hover:bg-white/20 shrink-0">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            onClick={openWalletEditor}
+            className="w-full flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors rounded-xl px-3 py-2 text-left group"
+          >
+            <span className="text-base">👛</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[10px] text-white/70">ჯიბეში ფული</span>
+              {state.walletBalance !== undefined ? (
+                <div className="flex items-baseline gap-1">
+                  <span className={cn(
+                    'text-sm font-black leading-none',
+                    state.walletBalance > 0 ? 'text-white' : 'text-red-300'
+                  )}>
+                    {state.walletBalance.toLocaleString()}₾
+                  </span>
+                  {state.walletBalance > 0 && totalExp > 0 && (
+                    <span className="text-[9px] text-white/50">
+                      · გაიხარჯა: {Math.max(0, (state.walletBalance)).toLocaleString()}₾ რჩება
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] text-white/50">+ მიუთითე ახლა რამდენი გაქვს</p>
+              )}
+            </div>
+            <span className="text-white/40 text-[10px] group-hover:text-white/70 transition-colors">✏️ შეცვლა</span>
+          </button>
+        )}
+      </div>
 
       {/* Bill Alerts */}
       <div className="px-4 pb-2">
