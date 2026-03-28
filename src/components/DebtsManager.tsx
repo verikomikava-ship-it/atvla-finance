@@ -19,6 +19,7 @@ interface DebtsManagerProps {
   onToggleDebtPaid: (id: number) => void;
   onPayDebtPart: (id: number) => void;
   onEditDebt: (id: number, updates: Partial<Debt>) => void;
+  filterPrefix?: string; // "🏦" = მხოლოდ ბანკის, "" = ბანკის გარეშე
 }
 
 const PRIORITY_CONFIG: Record<DebtPriority, { label: string; color: string; border: string; bg: string }> = {
@@ -121,6 +122,7 @@ export const DebtsManager: React.FC<DebtsManagerProps> = ({
   onToggleDebtPaid,
   onPayDebtPart,
   onEditDebt,
+  filterPrefix,
 }) => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -183,11 +185,18 @@ export const DebtsManager: React.FC<DebtsManagerProps> = ({
     }
   };
 
+  // ფილტრი prefix-ით
+  const matchesPrefix = (name: string) => {
+    if (filterPrefix === '🏦') return name.startsWith('🏦');
+    if (filterPrefix === '') return !name.startsWith('🏦');
+    return true;
+  };
+
   // აქტიური (გადაუხდელი) ვალები - პრიორიტეტით დალაგებული
   const activeDebts = useMemo(() => {
     const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
     return state.debts
-      .filter((d) => !d.paid)
+      .filter((d) => !d.paid && matchesPrefix(d.name))
       .sort((a, b) => {
         const pa = priorityOrder[a.priority || 'medium'];
         const pb = priorityOrder[b.priority || 'medium'];
@@ -198,10 +207,10 @@ export const DebtsManager: React.FC<DebtsManagerProps> = ({
         if (b.dueDate) return 1;
         return 0;
       });
-  }, [state.debts]);
+  }, [state.debts, filterPrefix]);
 
   // გადახდილი ვალები
-  const paidDebts = useMemo(() => state.debts.filter((d) => d.paid), [state.debts]);
+  const paidDebts = useMemo(() => state.debts.filter((d) => d.paid && matchesPrefix(d.name)), [state.debts, filterPrefix]);
 
   // აქტიური ვალების დაჯგუფება
   const activeGroups = useMemo((): DebtGroup[] => {
@@ -227,7 +236,7 @@ export const DebtsManager: React.FC<DebtsManagerProps> = ({
     }));
   }, [activeDebts]);
 
-  const totalAll = state.debts.reduce((sum, d) => sum + d.amount, 0);
+  const totalAll = state.debts.filter(d => matchesPrefix(d.name)).reduce((sum, d) => sum + d.amount, 0);
   const totalPaidFull = paidDebts.reduce((sum, d) => sum + d.amount, 0);
   const totalPartialPaid = activeDebts.reduce(
     (sum, d) => {

@@ -43,9 +43,9 @@ export const App: React.FC = () => {
   } = useAuth();
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth().toString());
-  const [activeTab, setActiveTab] = useState<'debts' | 'payments' | 'loans' | 'projects' | 'stats'>('payments');
-  const [paymentSubTab, setPaymentSubTab] = useState<'bills' | 'utilities' | 'subscriptions'>('bills');
-  const [debtSubTab, setDebtSubTab] = useState<'personal' | 'bank'>('personal');
+  const [activeTab, setActiveTab] = useState<'debts' | 'payments' | 'bank' | 'loans' | 'projects' | 'stats'>('payments');
+  const [paymentSubTab, setPaymentSubTab] = useState<'bills' | 'utilities' | 'subscriptions' | 'bankInterest'>('bills');
+  const [debtSubTab, setDebtSubTab] = useState<'personal' | 'bankPrincipal'>('personal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showMotivation, setShowMotivation] = useState(false);
@@ -895,8 +895,9 @@ export const App: React.FC = () => {
   }
 
   const tabs = [
-    { key: 'payments' as const, label: 'გადასახადები', icon: '📅' },
-    { key: 'debts' as const, label: 'ვალები / სესხები', icon: '💸' },
+    { key: 'debts' as const, label: 'ძირი ვალები', icon: '💰' },
+    { key: 'payments' as const, label: 'გადასახდელები', icon: '📅' },
+    { key: 'bank' as const, label: 'სესხები', icon: '🏦' },
     { key: 'projects' as const, label: 'პროექტები', icon: '🏗️' },
     { key: 'loans' as const, label: 'გასესხებული', icon: '🤝' },
     { key: 'stats' as const, label: 'სტატისტიკა', icon: '📊' },
@@ -1051,9 +1052,10 @@ export const App: React.FC = () => {
               {/* შიდა ტაბები */}
               <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 gap-0.5">
                 {([
-                  { key: 'bills' as const, label: 'ყოველთვიური', icon: '📅', count: state.bills.filter((b) => !b.paid && (b.reset_month ?? 0) === (selectedMonth !== '' ? parseInt(selectedMonth) : new Date().getMonth())).length },
+                  { key: 'bills' as const, label: 'ყოველთვიური', icon: '📅', count: state.bills.filter((b) => !b.paid && !b.name.startsWith('🏦') && (b.reset_month ?? 0) === (selectedMonth !== '' ? parseInt(selectedMonth) : new Date().getMonth())).length },
                   { key: 'utilities' as const, label: 'კომუნალური', icon: '⚡', count: 0 },
                   { key: 'subscriptions' as const, label: 'გამოწერები', icon: '🔄', count: (state.subscriptions || []).filter((s) => !s.paid && (s.reset_month ?? 0) === (selectedMonth !== '' ? parseInt(selectedMonth) : new Date().getMonth())).length },
+                  { key: 'bankInterest' as const, label: 'ბანკის %', icon: '🏦', count: state.bills.filter((b) => !b.paid && b.name.startsWith('🏦') && (b.reset_month ?? 0) === (selectedMonth !== '' ? parseInt(selectedMonth) : new Date().getMonth())).length },
                 ]).map((sub) => (
                   <button
                     key={sub.key}
@@ -1082,6 +1084,7 @@ export const App: React.FC = () => {
                   onRemoveBill={handleRemoveBill}
                   onToggleBillPaid={handleToggleBillPaid}
                   onEditBill={handleEditBill}
+                  filterPrefix=""
                 />
               )}
               {paymentSubTab === 'utilities' && (
@@ -1102,16 +1105,27 @@ export const App: React.FC = () => {
                   onEditSubscription={handleEditSubscription}
                 />
               )}
+              {paymentSubTab === 'bankInterest' && (
+                <BillsManager
+                  state={state}
+                  selectedMonth={selectedMonth}
+                  onAddBill={handleAddBill}
+                  onRemoveBill={handleRemoveBill}
+                  onToggleBillPaid={handleToggleBillPaid}
+                  onEditBill={handleEditBill}
+                  filterPrefix="🏦"
+                />
+              )}
             </>
           )}
 
-          {/* ===== ვალები / სესხები — შიდა ტაბებით ===== */}
+          {/* ===== ძირი ვალები ===== */}
           {activeTab === 'debts' && (
             <>
               <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 gap-0.5">
                 {([
-                  { key: 'personal' as const, label: 'ვალები', icon: '💸', count: state.debts.filter((d) => !d.paid).length },
-                  { key: 'bank' as const, label: 'ბანკები / მიკროსაფინანსო', icon: '🏦', count: (state.bankLoans || []).filter((l) => l.active).length + (state.lombards || []).length },
+                  { key: 'personal' as const, label: '💸 პირადი ვალები', count: state.debts.filter((d) => !d.paid && !d.name.startsWith('🏦')).length },
+                  { key: 'bankPrincipal' as const, label: '🏦 ბანკის ძირი', count: state.debts.filter((d) => !d.paid && d.name.startsWith('🏦')).length },
                 ]).map((sub) => (
                   <button
                     key={sub.key}
@@ -1123,7 +1137,6 @@ export const App: React.FC = () => {
                         : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                     )}
                   >
-                    <span>{sub.icon}</span>
                     <span>{sub.label}</span>
                     {sub.count > 0 && (
                       <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center">{sub.count}</span>
@@ -1140,18 +1153,32 @@ export const App: React.FC = () => {
                   onToggleDebtPaid={handleToggleDebtPaid}
                   onPayDebtPart={handlePayDebtPart}
                   onEditDebt={handleEditDebt}
+                  filterPrefix=""
                 />
               )}
-              {debtSubTab === 'bank' && (
-                <BankLoansManager
+              {debtSubTab === 'bankPrincipal' && (
+                <DebtsManager
                   state={state}
-                  onAddBankLoan={handleAddBankLoan}
-                  onRemoveBankLoan={handleRemoveBankLoan}
-                  onEditBankLoan={handleEditBankLoan}
-                  onToggleBillPaid={handleToggleBillPaid}
+                  onAddDebt={handleAddDebt}
+                  onRemoveDebt={handleRemoveDebt}
+                  onToggleDebtPaid={handleToggleDebtPaid}
+                  onPayDebtPart={handlePayDebtPart}
+                  onEditDebt={handleEditDebt}
+                  filterPrefix="🏦"
                 />
               )}
             </>
+          )}
+
+          {/* ===== სესხების მართვა (ბანკი/ლომბარდი) ===== */}
+          {activeTab === 'bank' && (
+            <BankLoansManager
+              state={state}
+              onAddBankLoan={handleAddBankLoan}
+              onRemoveBankLoan={handleRemoveBankLoan}
+              onEditBankLoan={handleEditBankLoan}
+              onToggleBillPaid={handleToggleBillPaid}
+            />
           )}
 
           {/* ===== პროექტები ===== */}

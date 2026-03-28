@@ -15,6 +15,7 @@ interface BillsManagerProps {
   onRemoveBill: (id: number) => void;
   onToggleBillPaid: (id: number) => void;
   onEditBill: (id: number, updates: Partial<Bill>) => void;
+  filterPrefix?: string; // "🏦" = მხოლოდ ბანკის, "" = ბანკის გარდა
 }
 
 export const BillsManager: React.FC<BillsManagerProps> = ({
@@ -24,6 +25,7 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
   onRemoveBill,
   onToggleBillPaid,
   onEditBill,
+  filterPrefix,
 }) => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -85,7 +87,14 @@ export const BillsManager: React.FC<BillsManagerProps> = ({
   const currentMonth = parseInt(selectedMonth || '0');
   // კომუნალური ბილები გავფილტროთ — ისინი ცალკე ტაბშია
   const isUtilityBill = (name: string) => name.startsWith('კომუნალური:') || UTILITY_TYPES.some((u) => u.label === name);
-  const monthlyBills = state.bills.filter((b) => (b.reset_month ?? 0) === currentMonth && !isUtilityBill(b.name));
+  const monthlyBills = state.bills.filter((b) => {
+    if ((b.reset_month ?? 0) !== currentMonth) return false;
+    if (isUtilityBill(b.name)) return false;
+    // filterPrefix: "🏦" = მხოლოდ ბანკის, "" = ბანკის გარეშე, undefined = ყველა
+    if (filterPrefix === '🏦') return b.name.startsWith('🏦');
+    if (filterPrefix === '') return !b.name.startsWith('🏦');
+    return true;
+  });
   const billsPaid = monthlyBills.filter((b) => b.paid).reduce((sum, b) => sum + b.amount, 0);
   const billsRemaining = monthlyBills
     .filter((b) => !b.paid)
