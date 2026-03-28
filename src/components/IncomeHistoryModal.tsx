@@ -10,7 +10,6 @@ interface IncomeHistoryModalProps {
   onClose: () => void;
 }
 
-const WEEKDAYS = ['კვ', 'ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ'];
 const WEEKDAYS_FULL = ['კვირა', 'ორშაბათი', 'სამშაბათი', 'ოთხშაბათი', 'ხუთშაბათი', 'პარასკევი', 'შაბათი'];
 
 const sourceInfo = (key: string) =>

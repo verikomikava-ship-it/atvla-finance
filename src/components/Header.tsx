@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AppState, UserProfile } from '../types';
 import { BillAlerts } from './BillAlerts';
 import { IncomeHistoryModal } from './IncomeHistoryModal';
@@ -117,6 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
   const kulabaProgress = goalAmount > 0 ? Math.min((totalKulaba / goalAmount) * 100, 100) : 0;
 
   return (
+    <>
     <header className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-emerald-600 text-white shadow-lg">
       <div className="px-4 pt-3 pb-2">
         {/* Row 1: Title + Month + Profile */}
@@ -380,32 +382,34 @@ export const Header: React.FC<HeaderProps> = ({
         <BillAlerts bills={state.bills} debts={state.debts} subscriptions={state.subscriptions || []} />
       </div>
 
-      {/* Income History Modal */}
-      {showIncomeHistory && (
+    </header>
+
+      {showIncomeHistory && createPortal(
         <IncomeHistoryModal
           state={state}
           selectedMonth={selectedMonth}
           onClose={() => setShowIncomeHistory(false)}
-        />
+        />,
+        document.body
       )}
 
-      {/* Expense History Modal */}
-      {showExpenseHistory && (
+      {showExpenseHistory && createPortal(
         <ExpenseHistoryModal
           state={state}
           selectedMonth={selectedMonth}
           onClose={() => setShowExpenseHistory(false)}
-        />
+        />,
+        document.body
       )}
 
-      {/* Balance History Modal */}
-      {showBalanceHistory && (
+      {showBalanceHistory && createPortal(
         <BalanceHistoryModal
           state={state}
           selectedMonth={selectedMonth}
           onClose={() => setShowBalanceHistory(false)}
-        />
+        />,
+        document.body
       )}
-    </header>
+    </>
   );
 };
