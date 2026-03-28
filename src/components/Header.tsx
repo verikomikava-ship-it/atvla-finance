@@ -145,13 +145,23 @@ export const Header: React.FC<HeaderProps> = ({
             <option value="" className="text-slate-800 bg-white font-medium">ყველა თვე</option>
           </select>
 
+          {/* Setup return button */}
+          <button
+            onClick={onRerunSetup}
+            title="ინსტალაციაზე დაბრუნება"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 border border-white/40 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-white" />
+            <span className="text-[11px] font-semibold text-white hidden sm:inline">ინსტალაცია</span>
+          </button>
+
           {/* Profile edit button */}
           <button
             onClick={openProfileEditor}
             title="პროფილის რედაქტირება"
-            className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            className="p-1.5 rounded-xl bg-white/20 hover:bg-white/30 border border-white/40 transition-colors"
           >
-            <Settings2 className="w-4 h-4" />
+            <Settings2 className="w-4 h-4 text-white" />
           </button>
         </div>
 
@@ -322,17 +332,6 @@ export const Header: React.FC<HeaderProps> = ({
             </Button>
           </div>
 
-          <div className="border-t border-white/20 pt-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => { setIsEditingProfile(false); onRerunSetup(); }}
-              className="w-full h-8 text-white/80 hover:bg-white/20 hover:text-white text-xs justify-start"
-            >
-              <RotateCcw className="h-3 w-3 mr-2" />
-              ↩ ინსტალაციაზე დაბრუნება
-            </Button>
-          </div>
         </div>
       )}
 
