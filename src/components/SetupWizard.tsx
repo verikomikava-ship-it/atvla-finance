@@ -26,6 +26,11 @@ interface SetupWizardProps {
   onSignUpWithEmail: (email: string, password: string) => Promise<void>;
   onSendPhoneCode: (phone: string, recaptchaId: string) => Promise<ConfirmationResult>;
   onConfirmPhoneCode: (result: ConfirmationResult, code: string) => Promise<void>;
+  existingProfile?: UserProfile;
+  existingBills?: Bill[];
+  existingBankLoans?: BankLoan[];
+  existingLombards?: Lombard[];
+  existingWalletBalance?: number;
 }
 
 const WEEK_DAYS = [
@@ -57,9 +62,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   onComplete, user, authLoading,
   onSignInWithGoogle, onSignInWithEmail, onSignUpWithEmail,
   onSendPhoneCode, onConfirmPhoneCode,
+  existingProfile, existingBills, existingBankLoans, existingLombards, existingWalletBalance,
 }) => {
-  const [step, setStep] = useState(0);
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const isRerun = !!existingProfile;
+  const [step, setStep] = useState(isRerun ? 1 : 0);
+  const [profile, setProfile] = useState<UserProfile>(existingProfile || DEFAULT_PROFILE);
 
   // Auth
   const [authTab, setAuthTab] = useState<'google' | 'email' | 'phone'>('google');
@@ -72,32 +79,46 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const [authError, setAuthError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
 
-  // Step 1 inputs
-  const [salaryInput, setSalaryInput] = useState('');
-  const [dailyTargetInput, setDailyTargetInput] = useState('');
+  // Step 1 inputs — pre-fill from existing
+  const [salaryInput, setSalaryInput] = useState(existingProfile?.salary ? existingProfile.salary.toString() : '');
+  const [dailyTargetInput, setDailyTargetInput] = useState(existingProfile?.dailyTarget ? existingProfile.dailyTarget.toString() : '');
   const [addIncName, setAddIncName] = useState('');
   const [addIncAmount, setAddIncAmount] = useState('');
   const [addIncFreq, setAddIncFreq] = useState<'daily' | 'weekly' | 'biweekly' | 'monthly'>('monthly');
 
   // Step 3 — ჯიბეში ფული
-  const [walletInput, setWalletInput] = useState('');
+  const [walletInput, setWalletInput] = useState(existingWalletBalance !== undefined ? existingWalletBalance.toString() : '');
 
-  // Step 2 — bills
-  const [bills, setBills] = useState<Bill[]>([]);
+  // Step 2 — bills (pre-fill existing)
+  const [bills, setBills] = useState<Bill[]>(existingBills || []);
   const [newBillName, setNewBillName] = useState('');
   const [newBillAmount, setNewBillAmount] = useState('');
   const [newBillDueDay, setNewBillDueDay] = useState('');
 
-  // Step 2 — utilities
-  const [utilityAmounts, setUtilityAmounts] = useState<Record<string, string>>({});
+  // Step 2 — utilities (pre-fill from existing bills)
+  const [utilityAmounts, setUtilityAmounts] = useState<Record<string, string>>(() => {
+    const amounts: Record<string, string> = {};
+    if (existingBills) {
+      existingBills.forEach((b) => {
+        const ut = UTILITY_TYPES.find((u) => b.name === `კომუნალური: ${u.label}`);
+        if (ut) amounts[ut.key] = b.amount.toString();
+      });
+    }
+    return amounts;
+  });
 
-  // Step 2 — bank loans
+  // Step 2 — bank loans (pre-fill existing)
   const [bankItems, setBankItems] = useState<{
     type: BankProductType; name?: string; principal: number;
     monthlyInterest: number; paymentDay: number;
     totalMonths: number; paidMonths: number;
     lateFee: number; dailyPenaltyRate: number;
-  }[]>([]);
+  }[]>(() => (existingBankLoans || []).map((b) => ({
+    type: b.type, name: b.name, principal: b.principal,
+    monthlyInterest: b.monthlyInterest, paymentDay: b.paymentDay,
+    totalMonths: b.totalMonths, paidMonths: 0,
+    lateFee: b.lateFee ?? 20, dailyPenaltyRate: b.dailyPenaltyRate ?? 0.5,
+  })));
   const [bankType, setBankType] = useState<BankProductType | null>(null);
   const [bankName, setBankName] = useState('');
   const [bankPrincipal, setBankPrincipal] = useState('');
@@ -106,11 +127,15 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   const [bankTotalMonths, setBankTotalMonths] = useState('');
   const [bankPaidMonths, setBankPaidMonths] = useState('');
 
-  // Step 2 — lombards
+  // Step 2 — lombards (pre-fill existing)
   const [lombardItems, setLombardItems] = useState<{
     itemName: string; principal: number; monthlyInterest: number;
     contractNumber?: string; paymentDay: number;
-  }[]>([]);
+  }[]>(() => (existingLombards || []).map((l) => ({
+    itemName: l.itemName, principal: l.principal,
+    monthlyInterest: l.monthlyInterest, contractNumber: l.contractNumber,
+    paymentDay: l.paymentDay,
+  })));
   const [lombItemName, setLombItemName] = useState('');
   const [lombPrincipal, setLombPrincipal] = useState('');
   const [lombInterest, setLombInterest] = useState('');

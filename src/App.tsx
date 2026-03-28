@@ -94,13 +94,15 @@ export const App: React.FC = () => {
 
   const handleSetupComplete = useCallback(
     (profile: UserProfile, bills: Bill[], setupDebts?: Debt[], setupLombards?: Lombard[], setupBankLoans?: BankLoan[], walletBalance?: number) => {
+      // თუ rerun-ია (უკვე იყო setupCompleted), replace ხდება
+      const isRerun = state.profile?.incomeType !== undefined;
       const newState: AppState = {
         ...state,
         profile,
-        bills: [...state.bills, ...bills],
-        debts: [...state.debts, ...(setupDebts || [])],
-        lombards: [...(state.lombards || []), ...(setupLombards || [])],
-        bankLoans: [...(state.bankLoans || []), ...(setupBankLoans || [])],
+        bills: isRerun ? bills : [...state.bills, ...bills],
+        debts: isRerun ? (setupDebts || state.debts) : [...state.debts, ...(setupDebts || [])],
+        lombards: isRerun ? (setupLombards || state.lombards || []) : [...(state.lombards || []), ...(setupLombards || [])],
+        bankLoans: isRerun ? (setupBankLoans || state.bankLoans || []) : [...(state.bankLoans || []), ...(setupBankLoans || [])],
         walletBalance: walletBalance !== undefined ? walletBalance : state.walletBalance,
       };
       updateState(newState);
@@ -871,6 +873,11 @@ export const App: React.FC = () => {
           onSignUpWithEmail={signUpWithEmail}
           onSendPhoneCode={sendPhoneCode}
           onConfirmPhoneCode={confirmPhoneCode}
+          existingProfile={state.profile?.incomeType ? state.profile : undefined}
+          existingBills={state.bills?.length ? state.bills : undefined}
+          existingBankLoans={state.bankLoans?.length ? state.bankLoans : undefined}
+          existingLombards={state.lombards?.length ? state.lombards : undefined}
+          existingWalletBalance={state.walletBalance}
         />
         <button
           onClick={toggleTheme}
