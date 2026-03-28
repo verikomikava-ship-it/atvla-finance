@@ -160,12 +160,21 @@ export const App: React.FC = () => {
 
   const handleGoalChange = useCallback(
     (goal: number, goalName: string) => {
-      const newState: AppState = {
-        ...state,
-        goal,
-        goalName,
-      };
-      updateState(newState);
+      updateState({ ...state, goal, goalName, goalProjectId: undefined });
+    },
+    [state, updateState]
+  );
+
+  const handleLinkProjectToGoal = useCallback(
+    (projectId: number | null) => {
+      if (projectId === null) {
+        updateState({ ...state, goalProjectId: undefined });
+        return;
+      }
+      const project = (state.projects || []).find(p => p.id === projectId);
+      if (!project) return;
+      const inventoryTotal = project.inventoryItems.reduce((s, i) => s + i.cost, 0);
+      updateState({ ...state, goalProjectId: projectId, goal: inventoryTotal, goalName: project.name });
     },
     [state, updateState]
   );
@@ -1080,6 +1089,8 @@ export const App: React.FC = () => {
               onToggleInventoryPurchased={handleToggleInventoryPurchased}
               onAddMonthlyCost={handleAddMonthlyCost}
               onRemoveMonthlyCost={handleRemoveMonthlyCost}
+              onLinkProjectToGoal={handleLinkProjectToGoal}
+              goalProjectId={state.goalProjectId}
             />
           )}
 

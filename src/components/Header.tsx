@@ -160,23 +160,28 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Goal / Kulaba */}
           <div
-            className="bg-white/15 backdrop-blur rounded-xl px-2 py-2 cursor-pointer hover:bg-white/25 transition-colors"
-            onClick={openGoalEditor}
+            className={cn(
+              'backdrop-blur rounded-xl px-2 py-2 cursor-pointer transition-colors',
+              state.goalProjectId
+                ? 'bg-amber-400/30 hover:bg-amber-400/40'
+                : 'bg-white/15 hover:bg-white/25'
+            )}
+            onClick={state.goalProjectId ? undefined : openGoalEditor}
           >
             <div className="flex items-center gap-1 mb-0.5">
               <Target className="w-3 h-3 text-amber-200" />
               <p className="text-[9px] font-semibold text-amber-200 truncate">
-                {state.goalName || 'მიზანი'}
+                {state.goalProjectId ? '🏗️ ' : ''}{state.goalName || 'მიზანი'}
               </p>
             </div>
             {goalAmount > 0 ? (
               <>
                 <p className="text-[11px] font-black text-white leading-none mb-1">
-                  {totalKulaba}₾ <span className="font-normal text-white/60">/ {goalAmount}₾</span>
+                  {totalKulaba.toLocaleString()}₾ <span className="font-normal text-white/60">/ {goalAmount.toLocaleString()}₾</span>
                 </p>
                 <div className="h-1 bg-white/30 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-white rounded-full transition-all duration-500"
+                    className="h-full bg-amber-300 rounded-full transition-all duration-500"
                     style={{ width: `${kulabaProgress}%` }}
                   />
                 </div>

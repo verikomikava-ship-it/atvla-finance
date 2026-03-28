@@ -20,6 +20,8 @@ interface ProjectsManagerProps {
   onToggleInventoryPurchased: (projectId: number, itemId: number) => void;
   onAddMonthlyCost: (projectId: number, name: string, amount: number) => void;
   onRemoveMonthlyCost: (projectId: number, costId: number) => void;
+  onLinkProjectToGoal: (projectId: number | null) => void;
+  goalProjectId?: number;
 }
 
 export const ProjectsManager: React.FC<ProjectsManagerProps> = ({
@@ -32,6 +34,8 @@ export const ProjectsManager: React.FC<ProjectsManagerProps> = ({
   onToggleInventoryPurchased,
   onAddMonthlyCost,
   onRemoveMonthlyCost,
+  onLinkProjectToGoal,
+  goalProjectId,
 }) => {
   // ახალი პროექტის ფორმა
   const [newName, setNewName] = useState('');
@@ -110,13 +114,19 @@ export const ProjectsManager: React.FC<ProjectsManagerProps> = ({
     const isEditing = editingId === project.id;
     const { inventoryTotal, inventoryPurchased, monthlyTotal } = getProjectTotals(project);
     const purchaseProgress = inventoryTotal > 0 ? (inventoryPurchased / inventoryTotal) * 100 : 0;
+    const isLinkedToGoal = goalProjectId === project.id;
+
+    const totalKulaba = Object.values(state.db).reduce((s, d) => s + (d.kulaba || 0), 0);
+    const kulabaProgress = inventoryTotal > 0 ? Math.min((totalKulaba / inventoryTotal) * 100, 100) : 0;
 
     return (
       <Card key={project.id} className={cn(
         'border transition-all duration-200',
-        project.active
-          ? 'border-indigo-200 dark:border-indigo-700/50'
-          : 'border-slate-200 dark:border-slate-700 opacity-60'
+        isLinkedToGoal
+          ? 'border-amber-400 dark:border-amber-500 ring-1 ring-amber-300 dark:ring-amber-600'
+          : project.active
+            ? 'border-indigo-200 dark:border-indigo-700/50'
+            : 'border-slate-200 dark:border-slate-700 opacity-60'
       )}>
         <CardContent className="p-3 space-y-2">
           {/* ჰედერი */}
@@ -175,24 +185,65 @@ export const ProjectsManager: React.FC<ProjectsManagerProps> = ({
 
           {/* სამარი — ყოველთვის ჩანს */}
           {!isEditing && (
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-2 text-center">
-                <div className="text-indigo-600 dark:text-indigo-400 font-bold">📦 ინვენტარი</div>
-                <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{inventoryTotal.toLocaleString()}₾</div>
-                {inventoryTotal > 0 && (
-                  <Progress value={purchaseProgress} className="h-1 mt-1" />
-                )}
-                <div className="text-slate-500 mt-0.5">
-                  ნაყიდი: {inventoryPurchased.toLocaleString()}₾
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-2 text-center">
+                  <div className="text-indigo-600 dark:text-indigo-400 font-bold">📦 ინვენტარი</div>
+                  <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{inventoryTotal.toLocaleString()}₾</div>
+                  {inventoryTotal > 0 && (
+                    <Progress value={purchaseProgress} className="h-1 mt-1" />
+                  )}
+                  <div className="text-slate-500 mt-0.5">
+                    ნაყიდი: {inventoryPurchased.toLocaleString()}₾
+                  </div>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 text-center">
+                  <div className="text-amber-600 dark:text-amber-400 font-bold">🔄 ყოველთვიური</div>
+                  <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{monthlyTotal.toLocaleString()}₾</div>
+                  <div className="text-slate-500 mt-0.5">
+                    {project.monthlyCosts.length} ხარჯი
+                  </div>
                 </div>
               </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 text-center">
-                <div className="text-amber-600 dark:text-amber-400 font-bold">🔄 ყოველთვიური</div>
-                <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{monthlyTotal.toLocaleString()}₾</div>
-                <div className="text-slate-500 mt-0.5">
-                  {project.monthlyCosts.length} ხარჯი
+
+              {/* კულაბა → პროექტი progress */}
+              {isLinkedToGoal && inventoryTotal > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-2.5">
+                  <div className="flex items-center justify-between mb-1.5 text-[10px]">
+                    <span className="text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1">
+                      🎯 კულაბა → {project.name}
+                    </span>
+                    <span className="font-black text-amber-700 dark:text-amber-300">
+                      {Math.round(kulabaProgress)}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-amber-200 dark:bg-amber-900 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all duration-500"
+                      style={{ width: `${kulabaProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1 text-[9px] text-amber-600 dark:text-amber-400">
+                    <span>🏺 {totalKulaba.toLocaleString()}₾ შენახული</span>
+                    <span>მიზანი: {inventoryTotal.toLocaleString()}₾</span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* "მიზნად დაყენება" / "გათიშვა" ღილაკი */}
+              {project.active && (
+                <button
+                  onClick={() => onLinkProjectToGoal(isLinkedToGoal ? null : project.id)}
+                  className={cn(
+                    'w-full text-[10px] font-bold py-1.5 rounded-lg border transition-all',
+                    isLinkedToGoal
+                      ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-300 hover:text-amber-600'
+                  )}
+                >
+                  {isLinkedToGoal ? '⭐ მიზანი — გათიშვა' : '🎯 მიზნად დაყენება'}
+                </button>
+              )}
             </div>
           )}
 
