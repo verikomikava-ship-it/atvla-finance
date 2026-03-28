@@ -75,6 +75,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
   // Step 1 inputs
   const [salaryInput, setSalaryInput] = useState('');
   const [dailyTargetInput, setDailyTargetInput] = useState('');
+  const [addIncName, setAddIncName] = useState('');
+  const [addIncAmount, setAddIncAmount] = useState('');
+  const [addIncFreq, setAddIncFreq] = useState<'daily' | 'weekly' | 'biweekly' | 'monthly'>('monthly');
 
   // Step 3 — ჯიბეში ფული
   const [walletInput, setWalletInput] = useState('');
@@ -133,6 +136,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
     if (profile.incomeType === 'freelance' || profile.incomeType === 'both') monthly += (profile.dailyTarget || 0) * 30;
     profile.additionalIncomes.forEach((ai) => {
       if (ai.frequency === 'monthly') monthly += ai.amount;
+      if (ai.frequency === 'biweekly') monthly += (ai.amount * 26) / 12;
       if (ai.frequency === 'weekly') monthly += (ai.amount * 52) / 12;
       if (ai.frequency === 'daily') monthly += ai.amount * 30;
     });
@@ -649,6 +653,88 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({
                   />
                 </div>
               )}
+
+              {/* დამატებითი შემოსავლები */}
+              <div className="space-y-2 animate-fadeIn">
+                <label className="text-xs text-muted-foreground block">➕ დამატებითი შემოსავალი (სურვილისამებრ)</label>
+
+                {/* არსებული სია */}
+                {profile.additionalIncomes.length > 0 && (
+                  <div className="space-y-1">
+                    {profile.additionalIncomes.map((ai) => {
+                      const freqLabel = { daily: 'ყოველდღე', weekly: 'კვირაში', biweekly: '2 კვირაში', monthly: 'თვეში' }[ai.frequency];
+                      return (
+                        <div key={ai.id} className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-3 py-2">
+                          <div>
+                            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{ai.name || '—'}</span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-2">{freqLabel} · {ai.amount.toLocaleString()}₾</span>
+                          </div>
+                          <button
+                            onClick={() => setProfile((p) => ({ ...p, additionalIncomes: p.additionalIncomes.filter((x) => x.id !== ai.id) }))}
+                            className="text-rose-400 hover:text-rose-600 text-xs px-1"
+                          >✕</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* ახლის დამატება */}
+                <div className="border border-dashed border-border rounded-xl p-3 space-y-2">
+                  <input
+                    type="text"
+                    placeholder="სახელი (მაგ: ქირა, სტიპენდია...)"
+                    value={addIncName}
+                    onChange={(e) => setAddIncName(e.target.value)}
+                    className={inputClass}
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text" inputMode="numeric"
+                      placeholder="₾"
+                      value={addIncAmount}
+                      onChange={(e) => setAddIncAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                      className={cn(inputClass, 'w-24 flex-shrink-0')}
+                    />
+                    <div className="grid grid-cols-4 gap-1 flex-1">
+                      {([
+                        { value: 'daily' as const, label: 'ყოველდღ.' },
+                        { value: 'weekly' as const, label: 'კვირაში' },
+                        { value: 'biweekly' as const, label: '2 კვირაში' },
+                        { value: 'monthly' as const, label: 'თვეში' },
+                      ]).map((f) => (
+                        <button key={f.value}
+                          onClick={() => setAddIncFreq(f.value)}
+                          className={cn('py-1.5 rounded-lg border text-[10px] font-bold transition-all',
+                            addIncFreq === f.value ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
+                          )}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const amt = parseInt(addIncAmount) || 0;
+                      if (amt <= 0) return;
+                      setProfile((p) => ({
+                        ...p,
+                        additionalIncomes: [...p.additionalIncomes, {
+                          id: Date.now(), name: addIncName.trim(), amount: amt, frequency: addIncFreq,
+                        }],
+                      }));
+                      setAddIncName('');
+                      setAddIncAmount('');
+                      setAddIncFreq('monthly');
+                    }}
+                    disabled={!addIncAmount || parseInt(addIncAmount) <= 0}
+                    className="w-full py-2 rounded-xl border-2 border-dashed border-primary/40 text-primary text-xs font-bold hover:bg-primary/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    + დამატება
+                  </button>
+                </div>
+              </div>
 
               {/* შეჯამება */}
               {monthlyIncome > 0 && (

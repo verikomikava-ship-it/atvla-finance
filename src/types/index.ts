@@ -291,7 +291,7 @@ export type AdditionalIncome = {
   id: number;
   name: string;
   amount: number;
-  frequency: 'monthly' | 'weekly' | 'daily';
+  frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
 };
 
 export type UserProfile = {
