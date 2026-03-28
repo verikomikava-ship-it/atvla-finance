@@ -7,7 +7,7 @@ import { ExpenseHistoryModal } from './ExpenseHistoryModal';
 import { BalanceHistoryModal } from './BalanceHistoryModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Settings2, Check, X, Target, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { Settings2, Check, X, Target, TrendingUp, TrendingDown, Wallet, RotateCcw } from 'lucide-react';
 import { MONTH_NAMES } from '@/utils/constants';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +21,7 @@ interface HeaderProps {
   onProfileChange: (profile: UserProfile) => void;
   onMonthChange: (month: string) => void;
   onWalletUpdate: (amount: number) => void;
+  onRerunSetup: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   onProfileChange,
   onMonthChange,
   onWalletUpdate,
+  onRerunSetup,
 }) => {
   const netBalance = totalInc - totalExp;
 
@@ -317,6 +319,18 @@ export const Header: React.FC<HeaderProps> = ({
             <Button size="sm" variant="ghost" onClick={() => setIsEditingProfile(false)}
               className="h-7 px-3 text-white hover:bg-white/20 text-xs">
               <X className="h-3 w-3 mr-1" /> გაუქმება
+            </Button>
+          </div>
+
+          <div className="border-t border-white/20 pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => { setIsEditingProfile(false); onRerunSetup(); }}
+              className="w-full h-8 text-white/80 hover:bg-white/20 hover:text-white text-xs justify-start"
+            >
+              <RotateCcw className="h-3 w-3 mr-2" />
+              ↩ ინსტალაციაზე დაბრუნება
             </Button>
           </div>
         </div>

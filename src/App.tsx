@@ -905,6 +905,7 @@ export const App: React.FC = () => {
           onProfileChange={handleProfileChange}
           onMonthChange={setSelectedMonth}
           onWalletUpdate={handleWalletUpdate}
+          onRerunSetup={handleRerunSetup}
         />
 
         <main className="px-3 py-2 space-y-2">
