@@ -103,7 +103,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
     return map;
   }, [state.db]);
 
-  // Round-up: ხარჯების ჯამიდან 10-ზე დამრგვალება — რამდენი უნდა კულაბაში
+  // Round-up: ხარჯების ჯამიდან 10-ზე დამრგვალება — რამდენი უნდა ყულაბაში
   const expensesTotal = getExpensesTotal(formData);
   const roundUpAmount = expensesTotal > 0 ? Math.ceil(expensesTotal / 10) * 10 - expensesTotal : 0;
 
@@ -534,7 +534,7 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
     );
   };
 
-  // კულაბაში მაქსიმუმ რამდენი შეიძლება ჩაიდოს (ბალანსი კულაბის გარეშე)
+  // ყულაბაში მაქსიმუმ რამდენი შეიძლება ჩაიდოს (ბალანსი კულაბის გარეშე)
   const availableForKulaba = income - getExpensesTotal(formData);
 
   return (
@@ -1317,13 +1317,13 @@ export const DayEditor: React.FC<DayEditorProps> = ({ date, state, onSave, onClo
             );
           })()}
 
-          {/* კულაბა */}
+          {/* ყულაბა */}
           <div className="px-2.5 py-2 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-700">
             <div className="flex gap-2 items-center">
               <span className="text-sm">🏺</span>
               <Input
                 type="text" inputMode="numeric"
-                placeholder="კულაბა ₾"
+                placeholder="ყულაბა ₾"
                 value={formData.kulaba || ''}
                 onChange={(e) => handleChange('kulaba', Math.max(0, +e.target.value))}
                 className="flex-1 h-7 text-xs border-amber-200 dark:border-amber-700 focus-visible:ring-amber-500"

@@ -274,14 +274,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ state, totalInc, totalExp,
 
   return (
     <div className="space-y-3">
-      {/* კულაბა */}
+      {/* ყულაბა */}
       <Card className="border-amber-200 dark:border-amber-700/50 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/10">
         <CardContent className="p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">🏺</span>
               <div>
-                <p className="text-xs text-amber-600 dark:text-amber-400">კულაბა</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">ყულაბა</p>
                 <p className="text-xl font-black text-amber-700 dark:text-amber-300">{totalKulaba}₾</p>
               </div>
             </div>

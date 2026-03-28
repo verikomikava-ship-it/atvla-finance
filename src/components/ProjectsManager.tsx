@@ -206,12 +206,12 @@ export const ProjectsManager: React.FC<ProjectsManagerProps> = ({
                 </div>
               </div>
 
-              {/* კულაბა → პროექტი progress */}
+              {/* ყულაბა → პროექტი progress */}
               {isLinkedToGoal && inventoryTotal > 0 && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-2.5">
                   <div className="flex items-center justify-between mb-1.5 text-[10px]">
                     <span className="text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1">
-                      🎯 კულაბა → {project.name}
+                      🎯 ყულაბა → {project.name}
                     </span>
                     <span className="font-black text-amber-700 dark:text-amber-300">
                       {Math.round(kulabaProgress)}%
