@@ -19,6 +19,7 @@ import { UtilitiesManager } from '@/components/UtilitiesManager';
 import { ToolsMenu } from '@/components/ToolsMenu';
 import { DiaryView } from '@/components/DiaryView';
 import { EventsView } from '@/components/EventsView';
+import { SmartAdvisor } from '@/components/SmartAdvisor';
 import { SetupWizard } from '@/components/SetupWizard';
 import { AuthModal } from '@/components/AuthModal';
 import { cn } from '@/lib/utils';
@@ -873,9 +874,11 @@ export const App: React.FC = () => {
           totalKulaba={stats.totalKulaba}
           onGoalChange={handleGoalChange}
           onProfileChange={handleProfileChange}
+          onMonthChange={setSelectedMonth}
         />
 
-        <main className="px-3 py-2">
+        <main className="px-3 py-2 space-y-2">
+          <SmartAdvisor state={state} selectedMonth={selectedMonth} />
           <DiaryView state={state} selectedMonth={selectedMonth} />
           <EventsView state={state} selectedMonth={selectedMonth} />
           <Calendar state={state} selectedMonth={selectedMonth} onDaySelect={setSelectedDay} />
@@ -916,42 +919,39 @@ export const App: React.FC = () => {
         // Mobile overlay
         sidebarOpen && '!flex fixed inset-y-0 right-0 w-[85vw] max-w-96 z-50 h-screen'
       )}>
-        <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+        {/* Sidebar header — mobile-ზე close button + month select */}
+        <div className="md:hidden p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-colors text-sm"
           >
             {MONTH_NAMES.map((month, index) => (
-              <option key={index} value={index.toString()}>
-                {month}
-              </option>
+              <option key={index} value={index.toString()}>{month}</option>
             ))}
             <option value="">ყველა თვე</option>
           </select>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
+          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Tabs */}
         <div className="border-b border-slate-200 dark:border-slate-700">
-          <div className="flex text-xs font-bold">
+          <div className="flex">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  'flex-1 py-2 px-1 transition-all duration-200 border-b-2 flex items-center justify-center gap-1.5',
+                  'flex-1 py-3 px-1 transition-all duration-200 border-b-2 flex flex-col items-center justify-center gap-0.5',
                   activeTab === tab.key
                     ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                     : 'text-slate-400 border-transparent hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
-                <span className="text-sm">{tab.icon}</span>
-                <span className="text-[11px]">{tab.label}</span>
+                <span className="text-base">{tab.icon}</span>
+                <span className="text-[9px] font-bold leading-none">{tab.label.split(' ')[0]}</span>
               </button>
             ))}
           </div>

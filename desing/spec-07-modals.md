@@ -1,0 +1,185 @@
+# Atvla Finance - Modals და Wizards
+
+## 8. Setup Wizard (Initial Setup)
+
+### 3 Steps:
+
+**Step 1 — Income:**
+```
+┌─────────────────────────────────────┐
+│  1/3  Income                         │
+│                                     │
+│  [💼 Salary] [📊 Freelance] [🧩 Both]│
+│                                     │
+│  Salary: [________] ₾              │
+│  Frequency: [▼ Once a month]        │
+│  Work days: [Mon][Tue]...[Sun]      │
+│                                     │
+│          [← Back]  [Next →]         │
+└─────────────────────────────────────┘
+```
+
+**Step 2 — Expenses:**
+```
+┌─────────────────────────────────────┐
+│  2/3  Monthly Expenses               │
+│                                     │
+│  ▶ 📅 Bills                         │
+│    [Rent][Insurance][Phone][Net]... │
+│                                     │
+│  ▶ ⚡ Utilities                     │
+│    [Electric][Gas][Water]...        │
+│                                     │
+│  ▶ 🏦 Bank Loans                    │
+│  ▶ 🏪 Pawn Shops                    │
+│                                     │
+│          [← Back]  [Next →]         │
+└─────────────────────────────────────┘
+```
+
+**Step 3 — Summary + Motivation:**
+```
+┌─────────────────────────────────────┐
+│  3/3  Ready! 🎉                     │
+│                                     │
+│  ┌──────────┬──────────┐            │
+│  │ Income   │ Budget   │            │
+│  │ 3000₾   │ 45₾/day  │            │
+│  └──────────┴──────────┘            │
+│                                     │
+│  💼 Salary:              3000₾     │
+│  📅 Bills:               -800₾     │
+│  ⚡ Utilities:            -200₾     │
+│  🏦 Loans:               -500₾     │
+│  ─────────────────────────          │
+│  Free:                   1500₾     │
+│                                     │
+│  ┌─ 💌 Motivational Letter ───────┐ │
+│  │ (gradient: purple → pink)       │ │
+│  │ Write a letter to yourself      │ │
+│  │ [textarea]                      │ │
+│  │ ⏰ What time? [▼ 09:00]         │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  [← Back]  [🏺 Let's Go! ✓]        │
+└─────────────────────────────────────┘
+```
+
+Progress indicator:
+```
+    ●━━━━━━━━━●━━━━━━━━━●━━━━━━━━━○
+    1         2         3
+```
+
+---
+
+## 9. Motivational Letter (Daily Popup)
+
+### Daily Modal:
+```
+┌─────────────────────────────────────┐
+│ (overlay: black/60 + backdrop-blur) │
+│                                     │
+│   ┌─ gradient border ──────────┐    │
+│   │ (purple → pink → orange)   │    │
+│   │                            │    │
+│   │   ┌─ white card ────────┐  │    │
+│   │   │                     │  │    │
+│   │   │       💌            │  │    │
+│   │   │  Letter to Yourself  │  │    │
+│   │   │  (gradient text)    │  │    │
+│   │   │                     │  │    │
+│   │   │ ┌─ purple bg ─────┐ │  │    │
+│   │   │ │                 │ │  │    │
+│   │   │ │  "You can do    │ │  │    │
+│   │   │ │   this!         │ │  │    │
+│   │   │ │   Keep going    │ │  │    │
+│   │   │ │   and never     │ │  │    │
+│   │   │ │   give up!"     │ │  │    │
+│   │   │ │                 │ │  │    │
+│   │   │ └─────────────────┘ │  │    │
+│   │   │                     │  │    │
+│   │   │ [💪 Got it, let's go!]│  │    │
+│   │   │                     │  │    │
+│   │   │ ✏️ Edit letter       │  │    │
+│   │   └─────────────────────┘  │    │
+│   └────────────────────────────┘    │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Behavior:**
+- Shows once per day at configured hour (default: 9 AM)
+- If app opens after set time, shows immediately
+- LocalStorage tracks last shown date
+- Editable from Settings menu or from popup itself
+
+---
+
+## 10. Tools Menu (⚙️ Settings)
+
+### Draggable Button:
+- **Size:** 48x48px, rounded-full
+- **Background:** gradient `blue-600 → emerald-600`
+- **Icon:** ⚙️ Settings (white)
+- **Position:** draggable, saves to localStorage
+- **z-index:** 50
+
+### Menu (popup):
+```
+┌────────────────────┐
+│ 💾 Save Backup      │  (green)
+│ 📂 Restore          │  (default)
+│ ✨ Clean Orphans     │  (outline)
+│ 💌 Motivation       │  (outline)
+│ 🔄 Re-setup         │  (outline)
+│ 🗑️ Reset All        │  (red/destructive)
+└────────────────────┘
+```
+
+---
+
+## 11. Auth Modal (Authentication)
+
+```
+┌─────────────────────────────────────┐
+│  ☁️ Authentication            [✕]   │
+│                                     │
+│  [Google] [Email] [Phone]           │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │ Google:                     │    │
+│  │ [Sign in with Google]       │    │
+│  │                             │    │
+│  │ Email:                      │    │
+│  │ [email] [password]          │    │
+│  │ [Sign In] / [Sign Up]      │    │
+│  │                             │    │
+│  │ Phone:                      │    │
+│  │ [+995 _________]            │    │
+│  │ [Send SMS Code]             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  ✅ Synced (if logged in)           │
+│  [Logout]                           │
+└─────────────────────────────────────┘
+```
+
+Cloud status (fixed bottom-left):
+- 🟢 `green-500` — Synced
+- ⚫ `slate-500` — Offline
+
+---
+
+## 12. Fixed Buttons (Bottom)
+
+```
+  [☁️]  [🌙]                    [⚙️]
+  auth   theme                  tools
+  (bl)   (bl+4.5rem)           (draggable)
+```
+
+- **Auth button:** 48px, bottom-left, green if logged in
+- **Theme toggle:** 40px, next to auth
+  - 🌙 Moon (light mode) → 🌞 Sun (dark mode)
+- **Tools:** 48px, draggable, gradient

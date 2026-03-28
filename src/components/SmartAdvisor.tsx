@@ -899,62 +899,66 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ state, selectedMonth
       {/* === კომპაქტური ჰედერი — ყოველთვის ჩანს === */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-800/50 dark:to-indigo-900/20 border border-slate-200/60 dark:border-slate-700/60 p-2.5 transition-all hover:shadow-md"
+        className="w-full rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 transition-all hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700"
       >
         <div className="flex items-center gap-3">
-          {/* მინი ქულა */}
+          {/* Health score circle */}
           <div className="relative shrink-0">
-            <svg viewBox="0 0 36 36" className="w-11 h-11">
+            <svg viewBox="0 0 36 36" className="w-12 h-12">
               <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none" stroke="currentColor" strokeWidth="3.5" className="text-slate-200 dark:text-slate-700" />
+                fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-100 dark:text-slate-700" />
               <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none" stroke={scoreColor} strokeWidth="3.5" strokeDasharray={`${a.healthScore}, 100`} className="transition-all duration-1000" />
+                fill="none" stroke={scoreColor} strokeWidth="3" strokeDasharray={`${a.healthScore}, 100`} className="transition-all duration-1000" />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[11px] font-black" style={{ color: scoreColor }}>{a.healthScore}</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[13px] font-black leading-none" style={{ color: scoreColor }}>{a.healthScore}</span>
+              <span className="text-[7px] text-slate-400 leading-none">❤️</span>
             </div>
           </div>
 
-          {/* ძირითადი რიცხვები */}
+          {/* ძირითადი ინფო */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Zap className="h-3 w-3 text-indigo-500" />
-              <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">მრჩეველი</span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Zap className="h-3.5 w-3.5 text-indigo-500" />
+              <span className="text-xs font-black text-slate-700 dark:text-slate-300">🧠 Smart Advisor</span>
               {criticalInsights.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-black animate-pulse">
-                  {criticalInsights.length}
+                <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black animate-pulse">
+                  🔴 {criticalInsights.length}
                 </span>
               )}
               {warningInsights.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[8px] font-black">
-                  {warningInsights.length}
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-black">
+                  🟡 {warningInsights.length}
+                </span>
+              )}
+              {otherInsights.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-black">
+                  🟢 {otherInsights.length}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3 text-[10px]">
+            <div className="flex items-center gap-3 text-[11px]">
               <span className={cn('font-black', a.inMyPocket >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                💰 {a.inMyPocket}₾
+                💰 {a.inMyPocket}₾ ჯიბეში
               </span>
-              <span className="text-muted-foreground">·</span>
+              <span className="text-slate-300 dark:text-slate-600">·</span>
               <span className={cn('font-bold', a.dailySafeSpend >= 20 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500')}>
                 📊 {a.dailySafeSpend}₾/დღე
               </span>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">{a.daysRemaining} დღე</span>
             </div>
           </div>
 
           {/* გაშლის ისარი */}
-          <div className="shrink-0">
-            {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          <div className="shrink-0 text-slate-400">
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </div>
 
         {/* კრიტიკული გაფრთხილებები — ჩაკეცილშიც ჩანს */}
         {!expanded && collapsedInsights.length > 0 && (
-          <div className="mt-2 space-y-1">
+          <div className="mt-2.5 space-y-1 text-left">
             {collapsedInsights.map((insight, i) => (
-              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-100 dark:bg-red-900/30 text-[10px]">
+              <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-[10px]">
                 <span>{insight.icon}</span>
                 <span className="font-bold text-red-600 dark:text-red-400 truncate">{insight.title}</span>
               </div>
