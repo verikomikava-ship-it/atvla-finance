@@ -1052,13 +1052,16 @@ export const App: React.FC = () => {
             const personalPrincipal = personalDebts.reduce((s, d) => s + d.amount - (d.paidAmount || 0), 0);
             const bankPrincipal = bankDebts.reduce((s, d) => s + d.amount - (d.paidAmount || 0), 0);
             const curMonth = selectedMonth !== '' ? parseInt(selectedMonth) : new Date().getMonth();
-            const monthlyBills = state.bills.filter(b => !b.name.startsWith('🏦') && (b.reset_month ?? 0) === curMonth);
+            const isUtilityBill = (name: string) => name.startsWith('კომუნალური:') || UTILITY_TYPES.some(u => u.label === name);
+            const monthlyBills = state.bills.filter(b => !b.name.startsWith('🏦') && !isUtilityBill(b.name) && (b.reset_month ?? 0) === curMonth);
             const monthlyBank = state.bills.filter(b => b.name.startsWith('🏦') && (b.reset_month ?? 0) === curMonth);
+            const utilBills = state.bills.filter(b => isUtilityBill(b.name) && (b.reset_month ?? 0) === curMonth);
             const monthlySubs = (state.subscriptions || []).filter(s => (s.reset_month ?? 0) === curMonth);
             const billsTotal = monthlyBills.reduce((s, b) => s + b.amount, 0);
             const bankBillsTotal = monthlyBank.reduce((s, b) => s + b.amount, 0);
+            const utilTotal = utilBills.reduce((s, b) => s + b.amount, 0);
             const subsTotal = monthlySubs.reduce((s, b) => s + b.amount, 0);
-            const monthlyTotal = billsTotal + bankBillsTotal + subsTotal;
+            const monthlyTotal = billsTotal + bankBillsTotal + utilTotal + subsTotal;
             const lentOut = state.loans?.filter(l => !l.returned).reduce((s, l) => s + l.amount, 0) || 0;
 
             return (
@@ -1304,11 +1307,8 @@ export const App: React.FC = () => {
                         const allItems = [
                           ...monthlyBills.map(b => ({ paid: b.paid })),
                           ...monthlyBank.map(b => ({ paid: b.paid })),
+                          ...utilBills.map(b => ({ paid: b.paid })),
                           ...monthlySubs.map(s => ({ paid: s.paid })),
-                          ...state.bills.filter(b => {
-                            const isUtil = b.name.startsWith('კომუნალური:') || UTILITY_TYPES.some(u => u.label === b.name);
-                            return isUtil && (b.reset_month ?? 0) === curMonth;
-                          }).map(b => ({ paid: b.paid })),
                         ];
                         const paidCount = allItems.filter(i => i.paid).length;
                         const totalCount = allItems.length;
@@ -1378,35 +1378,28 @@ export const App: React.FC = () => {
                       )}
 
                       {/* კომუნალური */}
-                      {(() => {
-                        const utilBills = state.bills.filter(b => {
-                          const isUtil = b.name.startsWith('კომუნალური:') || UTILITY_TYPES.some(u => u.label === b.name);
-                          return isUtil && (b.reset_month ?? 0) === curMonth;
-                        });
-                        const utilTotal = utilBills.reduce((s, b) => s + b.amount, 0);
-                        return utilBills.length > 0 ? (
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-1 h-4 rounded-full bg-emerald-400"></div>
-                              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">🏠 კომუნალური</span>
-                              <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 rounded-full px-2 py-0.5">{utilTotal.toLocaleString()}₾</span>
-                            </div>
-                            <div className="space-y-1.5">
-                              {utilBills.map(b => (
-                                <div key={b.id} className={cn("flex items-center justify-between px-3 py-2 rounded-xl text-sm", b.paid ? "bg-green-50 dark:bg-green-900/10" : "bg-slate-50 dark:bg-slate-800/50")}>
-                                  <div className="flex items-center gap-2">
-                                    <span className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]", b.paid ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-600")}>
-                                      {b.paid && '✓'}
-                                    </span>
-                                    <span className={cn("font-medium", b.paid && "line-through opacity-50")}>{b.name}</span>
-                                  </div>
-                                  <span className={cn("font-bold", b.paid ? "text-green-600 dark:text-green-400" : "text-slate-700 dark:text-slate-300")}>{b.amount.toLocaleString()}₾</span>
-                                </div>
-                              ))}
-                            </div>
+                      {utilBills.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1 h-4 rounded-full bg-emerald-400"></div>
+                            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">🏠 კომუნალური</span>
+                            <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 rounded-full px-2 py-0.5">{utilTotal.toLocaleString()}₾</span>
                           </div>
-                        ) : null;
-                      })()}
+                          <div className="space-y-1.5">
+                            {utilBills.map(b => (
+                              <div key={b.id} className={cn("flex items-center justify-between px-3 py-2 rounded-xl text-sm", b.paid ? "bg-green-50 dark:bg-green-900/10" : "bg-slate-50 dark:bg-slate-800/50")}>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]", b.paid ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-600")}>
+                                    {b.paid && '✓'}
+                                  </span>
+                                  <span className={cn("font-medium", b.paid && "line-through opacity-50")}>{b.name}</span>
+                                </div>
+                                <span className={cn("font-bold", b.paid ? "text-green-600 dark:text-green-400" : "text-slate-700 dark:text-slate-300")}>{b.amount.toLocaleString()}₾</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* გამოწერები */}
                       {monthlySubs.length > 0 && (
@@ -1433,7 +1426,7 @@ export const App: React.FC = () => {
                       )}
 
                       {/* ცარიელი */}
-                      {monthlyBills.length === 0 && monthlyBank.length === 0 && monthlySubs.length === 0 && (
+                      {monthlyBills.length === 0 && monthlyBank.length === 0 && utilBills.length === 0 && monthlySubs.length === 0 && (
                         <p className="text-center text-slate-400 py-8">ამ თვეში გადასახდელი არ არის</p>
                       )}
                     </div>
