@@ -147,14 +147,26 @@ export const App: React.FC = () => {
         });
       }
 
+      // 👛 ჯიბე ავტო-განახლება — ძველი vs ახალი delta
+      let updatedWallet = state.walletBalance;
+      if (updatedWallet !== undefined) {
+        const old = state.db[date];
+        const oldInc = (old?.incMain || 0) + (old?.incExtra || 0);
+        const oldExp = (old?.expenses || []).reduce((s, e) => s + e.amount, 0);
+        const newInc = (data.incMain || 0) + (data.incExtra || 0);
+        const newExp = (data.expenses || []).reduce((s, e) => s + e.amount, 0);
+        const delta = (newInc - oldInc) - (newExp - oldExp);
+        if (delta !== 0) {
+          updatedWallet = Math.max(0, updatedWallet + delta);
+        }
+      }
+
       const newState: AppState = {
         ...state,
-        db: {
-          ...state.db,
-          [date]: data,
-        },
+        db: { ...state.db, [date]: data },
         debts: updatedDebts,
         bills: updatedBills,
+        walletBalance: updatedWallet,
       };
       updateState(newState);
       setSelectedDay(null);
