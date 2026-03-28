@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { AppState, DayData, Debt, DebtPriority, UserProfile, Bill, Subscription, Loan, Lombard, BankLoan, BankProductType, Project, ProjectType, VACATION_CATEGORIES } from '@/types';
+import { createPortal } from 'react-dom';
+import { AppState, DayData, Debt, DebtPriority, UserProfile, Bill, Subscription, Loan, Lombard, BankLoan, BankProductType, Project, ProjectType, VACATION_CATEGORIES, UTILITY_TYPES } from '@/types';
 import { useAppState } from '@/hooks/useAppState';
 import { useAuth } from '@/hooks/useAuth';
 import { useFirestoreSync } from '@/hooks/useFirestoreSync';
@@ -46,6 +47,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'debts' | 'projects' | 'stats'>('debts');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<{ cash?: boolean; bank?: boolean; monthly?: boolean; lent?: boolean }>({});
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showMotivation, setShowMotivation] = useState(false);
   const [showMotivationEditor, setShowMotivationEditor] = useState(false);
@@ -1071,14 +1073,15 @@ export const App: React.FC = () => {
                     <span className="bg-white/20 rounded-full px-2 py-0.5 text-[9px] font-medium">🏦 {bankPrincipal.toLocaleString()}</span>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-orange-600 text-white rounded-2xl p-3 text-center shadow-lg shadow-amber-500/20">
+                <button onClick={() => setShowMonthlyModal(true)} className="bg-gradient-to-br from-amber-500 via-orange-500 to-orange-600 text-white rounded-2xl p-3 text-center shadow-lg shadow-amber-500/20 active:scale-95 transition-transform">
                   <p className="text-[10px] uppercase tracking-wider opacity-80 font-medium">ყოველთვიური</p>
                   <p className="text-xl font-black mt-0.5">{monthlyTotal.toLocaleString()}₾</p>
                   <div className="flex justify-center gap-3 mt-1.5">
                     <span className="bg-white/20 rounded-full px-2 py-0.5 text-[9px] font-medium">📋 {billsTotal.toLocaleString()}</span>
                     <span className="bg-white/20 rounded-full px-2 py-0.5 text-[9px] font-medium">🏦 {bankBillsTotal.toLocaleString()}</span>
                   </div>
-                </div>
+                  <p className="text-[9px] opacity-60 mt-1">დააჭირე სრული სიისთვის</p>
+                </button>
               </div>
 
               {/* ═══ 1. ქეშ ვალები ═══ */}
@@ -1277,6 +1280,175 @@ export const App: React.FC = () => {
                   </div>
                 )}
               </div>
+              {/* ═══ ყოველთვიური მოდალი ═══ */}
+              {showMonthlyModal && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center" onClick={() => setShowMonthlyModal(false)}>
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                  <div
+                    className="relative w-full max-w-md max-h-[85vh] bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* ჰედერი */}
+                    <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 px-5 py-4 text-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-black">📅 ყოველთვიური გადასახდელები</p>
+                          <p className="text-xs opacity-80 mt-0.5">{MONTH_NAMES[curMonth]} — სულ {monthlyTotal.toLocaleString()}₾</p>
+                        </div>
+                        <button onClick={() => setShowMonthlyModal(false)} className="bg-white/20 rounded-full p-1.5 hover:bg-white/30 transition-colors">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {/* პროგრესი */}
+                      {(() => {
+                        const allItems = [
+                          ...monthlyBills.map(b => ({ paid: b.paid })),
+                          ...monthlyBank.map(b => ({ paid: b.paid })),
+                          ...monthlySubs.map(s => ({ paid: s.paid })),
+                          ...state.bills.filter(b => {
+                            const isUtil = b.name.startsWith('კომუნალური:') || UTILITY_TYPES.some(u => u.label === b.name);
+                            return isUtil && (b.reset_month ?? 0) === curMonth;
+                          }).map(b => ({ paid: b.paid })),
+                        ];
+                        const paidCount = allItems.filter(i => i.paid).length;
+                        const totalCount = allItems.length;
+                        const pct = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0;
+                        return totalCount > 0 ? (
+                          <div className="mt-3">
+                            <div className="flex justify-between text-[10px] opacity-80 mb-1">
+                              <span>{paidCount}/{totalCount} გადახდილი</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                              <div className="h-full bg-white rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+
+                    {/* კონტენტი */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {/* ბილები */}
+                      {monthlyBills.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1 h-4 rounded-full bg-amber-400"></div>
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">📋 ბილები</span>
+                            <span className="ml-auto text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/30 rounded-full px-2 py-0.5">{billsTotal.toLocaleString()}₾</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {monthlyBills.map(b => (
+                              <div key={b.id} className={cn("flex items-center justify-between px-3 py-2 rounded-xl text-sm", b.paid ? "bg-green-50 dark:bg-green-900/10" : "bg-slate-50 dark:bg-slate-800/50")}>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]", b.paid ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-600")}>
+                                    {b.paid && '✓'}
+                                  </span>
+                                  <span className={cn("font-medium", b.paid && "line-through opacity-50")}>{b.name}</span>
+                                </div>
+                                <span className={cn("font-bold", b.paid ? "text-green-600 dark:text-green-400" : "text-slate-700 dark:text-slate-300")}>{b.amount.toLocaleString()}₾</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ბანკის გადახდები */}
+                      {monthlyBank.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1 h-4 rounded-full bg-blue-400"></div>
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">🏦 ბანკის გადახდები</span>
+                            <span className="ml-auto text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/30 rounded-full px-2 py-0.5">{bankBillsTotal.toLocaleString()}₾</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {monthlyBank.map(b => (
+                              <div key={b.id} className={cn("flex items-center justify-between px-3 py-2 rounded-xl text-sm", b.paid ? "bg-green-50 dark:bg-green-900/10" : "bg-slate-50 dark:bg-slate-800/50")}>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]", b.paid ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-600")}>
+                                    {b.paid && '✓'}
+                                  </span>
+                                  <span className={cn("font-medium", b.paid && "line-through opacity-50")}>{b.name.replace('🏦 ', '')}</span>
+                                </div>
+                                <span className={cn("font-bold", b.paid ? "text-green-600 dark:text-green-400" : "text-slate-700 dark:text-slate-300")}>{b.amount.toLocaleString()}₾</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* კომუნალური */}
+                      {(() => {
+                        const utilBills = state.bills.filter(b => {
+                          const isUtil = b.name.startsWith('კომუნალური:') || UTILITY_TYPES.some(u => u.label === b.name);
+                          return isUtil && (b.reset_month ?? 0) === curMonth;
+                        });
+                        const utilTotal = utilBills.reduce((s, b) => s + b.amount, 0);
+                        return utilBills.length > 0 ? (
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-1 h-4 rounded-full bg-emerald-400"></div>
+                              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">🏠 კომუნალური</span>
+                              <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 rounded-full px-2 py-0.5">{utilTotal.toLocaleString()}₾</span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {utilBills.map(b => (
+                                <div key={b.id} className={cn("flex items-center justify-between px-3 py-2 rounded-xl text-sm", b.paid ? "bg-green-50 dark:bg-green-900/10" : "bg-slate-50 dark:bg-slate-800/50")}>
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]", b.paid ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-600")}>
+                                      {b.paid && '✓'}
+                                    </span>
+                                    <span className={cn("font-medium", b.paid && "line-through opacity-50")}>{b.name}</span>
+                                  </div>
+                                  <span className={cn("font-bold", b.paid ? "text-green-600 dark:text-green-400" : "text-slate-700 dark:text-slate-300")}>{b.amount.toLocaleString()}₾</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
+                      {/* გამოწერები */}
+                      {monthlySubs.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1 h-4 rounded-full bg-violet-400"></div>
+                            <span className="text-xs font-bold text-violet-700 dark:text-violet-300">🔄 გამოწერები</span>
+                            <span className="ml-auto text-[10px] font-bold text-violet-600 bg-violet-100 dark:bg-violet-900/30 rounded-full px-2 py-0.5">{subsTotal.toLocaleString()}₾</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {monthlySubs.map(s => (
+                              <div key={s.id} className={cn("flex items-center justify-between px-3 py-2 rounded-xl text-sm", s.paid ? "bg-green-50 dark:bg-green-900/10" : "bg-slate-50 dark:bg-slate-800/50")}>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px]", s.paid ? "border-green-500 bg-green-500 text-white" : "border-slate-300 dark:border-slate-600")}>
+                                    {s.paid && '✓'}
+                                  </span>
+                                  <span className={cn("font-medium", s.paid && "line-through opacity-50")}>{s.name}</span>
+                                </div>
+                                <span className={cn("font-bold", s.paid ? "text-green-600 dark:text-green-400" : "text-slate-700 dark:text-slate-300")}>{s.amount.toLocaleString()}₾</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ცარიელი */}
+                      {monthlyBills.length === 0 && monthlyBank.length === 0 && monthlySubs.length === 0 && (
+                        <p className="text-center text-slate-400 py-8">ამ თვეში გადასახდელი არ არის</p>
+                      )}
+                    </div>
+
+                    {/* ფუტერი - სულ */}
+                    <div className="border-t border-slate-200 dark:border-slate-700 px-5 py-3 bg-slate-50 dark:bg-slate-800/50">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">სულ გადასახდელი:</span>
+                        <span className="text-lg font-black text-orange-600 dark:text-orange-400">{monthlyTotal.toLocaleString()}₾</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
             </>
             );
           })()}
