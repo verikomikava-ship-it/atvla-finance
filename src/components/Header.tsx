@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppState, UserProfile } from '../types';
 import { BillAlerts } from './BillAlerts';
+import { IncomeHistoryModal } from './IncomeHistoryModal';
+import { ExpenseHistoryModal } from './ExpenseHistoryModal';
+import { BalanceHistoryModal } from './BalanceHistoryModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Settings2, Check, X, Target, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
@@ -31,6 +34,11 @@ export const Header: React.FC<HeaderProps> = ({
   onWalletUpdate,
 }) => {
   const netBalance = totalInc - totalExp;
+
+  // Income history modal
+  const [showIncomeHistory, setShowIncomeHistory] = useState(false);
+  const [showExpenseHistory, setShowExpenseHistory] = useState(false);
+  const [showBalanceHistory, setShowBalanceHistory] = useState(false);
 
   // Wallet editor
   const [isEditingWallet, setIsEditingWallet] = useState(false);
@@ -146,28 +154,37 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Row 2: Stats — Income | Expenses | Balance | Goal */}
         <div className="grid grid-cols-4 gap-2">
           {/* Income */}
-          <div className="bg-white/15 backdrop-blur rounded-xl px-2 py-2 text-center">
+          <button
+            onClick={() => setShowIncomeHistory(true)}
+            className="bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur rounded-xl px-2 py-2 text-center transition-colors"
+          >
             <div className="flex items-center justify-center gap-1 mb-0.5">
               <TrendingUp className="w-3 h-3 text-emerald-200" />
               <p className="text-[9px] font-semibold text-emerald-200">შემოსავ.</p>
             </div>
             <p className="text-sm font-black text-white leading-none">{totalInc.toLocaleString()}₾</p>
-          </div>
+          </button>
 
           {/* Expenses */}
-          <div className="bg-white/15 backdrop-blur rounded-xl px-2 py-2 text-center">
+          <button
+            onClick={() => setShowExpenseHistory(true)}
+            className="bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur rounded-xl px-2 py-2 text-center transition-colors"
+          >
             <div className="flex items-center justify-center gap-1 mb-0.5">
               <TrendingDown className="w-3 h-3 text-red-200" />
               <p className="text-[9px] font-semibold text-red-200">გასავ.</p>
             </div>
             <p className="text-sm font-black text-white leading-none">{totalExp.toLocaleString()}₾</p>
-          </div>
+          </button>
 
           {/* Balance */}
-          <div className={cn(
-            'backdrop-blur rounded-xl px-2 py-2 text-center',
-            netBalance >= 0 ? 'bg-emerald-400/30' : 'bg-red-400/30'
-          )}>
+          <button
+            onClick={() => setShowBalanceHistory(true)}
+            className={cn(
+              'backdrop-blur rounded-xl px-2 py-2 text-center transition-colors',
+              netBalance >= 0 ? 'bg-emerald-400/30 hover:bg-emerald-400/45' : 'bg-red-400/30 hover:bg-red-400/45'
+            )}
+          >
             <div className="flex items-center justify-center gap-1 mb-0.5">
               <Wallet className="w-3 h-3 text-white/80" />
               <p className="text-[9px] font-semibold text-white/80">ბალანსი</p>
@@ -178,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}>
               {netBalance >= 0 ? '+' : ''}{netBalance.toLocaleString()}₾
             </p>
-          </div>
+          </button>
 
           {/* Goal / Kulaba */}
           <div
@@ -362,6 +379,33 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="px-4 pb-2">
         <BillAlerts bills={state.bills} debts={state.debts} subscriptions={state.subscriptions || []} />
       </div>
+
+      {/* Income History Modal */}
+      {showIncomeHistory && (
+        <IncomeHistoryModal
+          state={state}
+          selectedMonth={selectedMonth}
+          onClose={() => setShowIncomeHistory(false)}
+        />
+      )}
+
+      {/* Expense History Modal */}
+      {showExpenseHistory && (
+        <ExpenseHistoryModal
+          state={state}
+          selectedMonth={selectedMonth}
+          onClose={() => setShowExpenseHistory(false)}
+        />
+      )}
+
+      {/* Balance History Modal */}
+      {showBalanceHistory && (
+        <BalanceHistoryModal
+          state={state}
+          selectedMonth={selectedMonth}
+          onClose={() => setShowBalanceHistory(false)}
+        />
+      )}
     </header>
   );
 };
